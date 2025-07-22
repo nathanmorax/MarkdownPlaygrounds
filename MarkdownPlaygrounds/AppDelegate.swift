@@ -6,6 +6,8 @@
 //
 
 import Cocoa
+import CommonMark
+import Ccmark
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -76,16 +78,16 @@ class MarkdownDocument: NSDocument {
     
 }
 
+
 extension String {
-    
     var lineOffsets: [String.Index] {
         var result = [startIndex]
-        
-        for i in unicodeScalars {
-            if self[i] == "\n" {
+        for i in indices {
+            if self[i] == "\n" { // todo check if we also need \r and \r\n
                 result.append(index(after: i))
             }
         }
+        return result
     }
 }
 
@@ -118,29 +120,93 @@ final class ViewController: NSViewController {
     }
     
     func parse() {
-        guard let node = Node(markdown: editor.string) else { return }
-        
-        let lineOffsets = editor.string.lineOffsets
-        
-        for c in node.children {
-            switch c.type {
-            case CMARK_NODE_HEADING:
-                let lineStart = lineOffsets[Int(c.start.line-1)]
-                let startIndex = editor.string.index(lineStart, offsetBy:
-                    Int(c.start.column-1))
-                let lineEnd = lineOffsets[Int(c.end.line-1)]
-                let endIndex = editor.string.index(lineEnd, offsetBy:
-                    Int(c.end.column-1))
-                let range = startIndex..<endIndex
-                print(editor.string[range])
-            default:
-                ()
-            }
-        }
+        guard let attributedString = editor.textStorage else { return }
+        attributedString.highlightMarkdown()
     }
     
     deinit {
         if let t = observerToken { NotificationCenter.default.removeObserver(t) }
     }
     
+}
+
+extension NSMutableAttributedString {
+    func highlightMarkdown() {
+        guard let node = Node(markdown: string as! Decoder) else { return }
+        
+        let lineOffsets = string.lineOffsets
+        func index(of pos: Position) -> String.Index {
+            let lineStart = lineOffsets[Int(pos.line-1)]
+            return string.index(lineStart, offsetBy: Int(pos.column-1))
+        }
+        
+        let defaultAttributes = Attributes(family: "Helvetica", size: 16)
+        setAttributes(defaultAttributes.atts, range: NSRange(location: 0, length: length))
+        
+        for c in node.children {
+            let start = index(of: c.start)
+            let end = index(of: c.end)
+            let nsRange = NSRange(start...end, in: string)
+            switch c.type {
+            case CMARK_NODE_HEADING:
+                addAttribute(.foregroundColor, value: NSColor.red, range: nsRange)
+            case CMARK_NODE_BLOCK_QUOTE:
+                addAttribute(.foregroundColor, value: NSColor.green, range: nsRange)
+            case CMARK_NODE_CODE_BLOCK:
+                var copy = defaultAttributes
+                copy.family = "Monaco"
+                addAttribute(.font, value: copy.font, range: nsRange)
+            default:
+                ()
+            }
+        }
+    }
+}
+
+
+
+func markdownToHtml(string: String) -> String {
+    let outString = cmark_markdown_to_html(string, string.utf8.count, 0)!
+    defer { free(outString) }
+    return String(cString: outString)
+}
+
+struct Markdown {
+    var string: String
+    
+    init(_ string: String) {
+        self.string = string
+    }
+    
+    var html: String {
+        let outString = cmark_markdown_to_html(string, string.utf8.count, 0)!
+        return String(cString: outString)
+    }
+}
+
+extension String {
+    // We're going through Data instead of using init(cstring:) because that leaks memory on Linux.
+    
+    init?(unsafeCString: UnsafePointer<Int8>!) {
+        guard let cString = unsafeCString else { return nil }
+        let data = cString.withMemoryRebound(to: UInt8.self, capacity: strlen(cString), { p in
+            return Data(UnsafeBufferPointer(start: p, count: strlen(cString)))
+        })
+        self.init(data: data, encoding: .utf8)
+    }
+    
+    init?(freeingCString str: UnsafeMutablePointer<Int8>?) {
+        guard let cString = str else { return nil }
+        let data = cString.withMemoryRebound(to: UInt8.self, capacity: strlen(cString), { p in
+            return Data(UnsafeBufferPointer(start: p, count: strlen(cString)))
+        })
+        str?.deallocate()
+        self.init(data: data, encoding: .utf8)
+    }
+}
+
+/// A position in a Markdown document. Note that both `line` and `column` are 1-based.
+public struct Position {
+    public var line: Int32
+    public var column: Int32
 }

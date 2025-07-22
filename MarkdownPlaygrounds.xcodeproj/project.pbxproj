@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		2D5ADF482E30240D009B2468 /* CommonMark in Frameworks */ = {isa = PBXBuildFile; productRef = 2D5ADF472E30240D009B2468 /* CommonMark */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		2DB9DA4E2E2F1EC400C34B6E /* MarkdownPlaygrounds.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarkdownPlaygrounds.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +27,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2D5ADF482E30240D009B2468 /* CommonMark in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +70,7 @@
 			);
 			name = MarkdownPlaygrounds;
 			packageProductDependencies = (
+				2D5ADF472E30240D009B2468 /* CommonMark */,
 			);
 			productName = MarkdownPlaygrounds;
 			productReference = 2DB9DA4E2E2F1EC400C34B6E /* MarkdownPlaygrounds.app */;
@@ -94,6 +100,9 @@
 			);
 			mainGroup = 2DB9DA452E2F1EC400C34B6E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				2D5ADF462E30240D009B2468 /* XCRemoteSwiftPackageReference "commonmark-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2DB9DA4F2E2F1EC400C34B6E /* Products */;
 			projectDirPath = "";
@@ -319,6 +328,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		2D5ADF462E30240D009B2468 /* XCRemoteSwiftPackageReference "commonmark-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/objcio/commonmark-swift";
+			requirement = {
+				kind = exactVersion;
+				version = 0.8.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		2D5ADF472E30240D009B2468 /* CommonMark */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2D5ADF462E30240D009B2468 /* XCRemoteSwiftPackageReference "commonmark-swift" */;
+			productName = CommonMark;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2DB9DA462E2F1EC400C34B6E /* Project object */;
 }
