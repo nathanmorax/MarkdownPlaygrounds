@@ -80,6 +80,7 @@ final class ViewController: NSViewController {
     
     let editor = NSTextView()
     let output = NSTextView()
+    var observerToken: Any?
     
     override func loadView() {
         
@@ -92,6 +93,23 @@ final class ViewController: NSViewController {
         
         self.view = Boilerplate().splitView([editorSV, outputSV])
         
+    }
+    
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        NotificationCenter.default.addObserver(forName: NSTextView.didChangeNotification, object: editor, queue: nil) { [unowned self] _ in
+            print("change")
+            self.parse()
+        }
+    }
+    
+    func parse() {
+        
+    }
+    
+    deinit {
+        if let t = observerToken { NotificationCenter.default.removeObserver(t) }
     }
     
 }
