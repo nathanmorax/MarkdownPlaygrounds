@@ -9,12 +9,12 @@ import Cocoa
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
-
+    
     func applicationWillFinishLaunching(_ notification: Notification) {
         _ = MarkdownDocumentController()
     }
-
-
+    
+    
 }
 
 class MarkdownDocumentController: NSDocumentController {
@@ -76,6 +76,19 @@ class MarkdownDocument: NSDocument {
     
 }
 
+extension String {
+    
+    var lineOffsets: [String.Index] {
+        var result = [startIndex]
+        
+        for i in unicodeScalars {
+            if self[i] == "\n" {
+                result.append(index(after: i))
+            }
+        }
+    }
+}
+
 final class ViewController: NSViewController {
     
     let editor = NSTextView()
@@ -87,7 +100,7 @@ final class ViewController: NSViewController {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 30, height: 10))
         let outputSV = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 10, height: 10))
         outputSV.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
-
+        
         output.string = "output"
         editor.allowsUndo = true
         
@@ -105,7 +118,25 @@ final class ViewController: NSViewController {
     }
     
     func parse() {
+        guard let node = Node(markdown: editor.string) else { return }
         
+        let lineOffsets = editor.string.lineOffsets
+        
+        for c in node.children {
+            switch c.type {
+            case CMARK_NODE_HEADING:
+                let lineStart = lineOffsets[Int(c.start.line-1)]
+                let startIndex = editor.string.index(lineStart, offsetBy:
+                    Int(c.start.column-1))
+                let lineEnd = lineOffsets[Int(c.end.line-1)]
+                let endIndex = editor.string.index(lineEnd, offsetBy:
+                    Int(c.end.column-1))
+                let range = startIndex..<endIndex
+                print(editor.string[range])
+            default:
+                ()
+            }
+        }
     }
     
     deinit {
