@@ -1,13 +1,13 @@
 {
-  "originHash" : "d329613b56fcc579e708d97bf03e6918560014ae9ec87cf7b44aaa5db6aca8a5",
+  "originHash" : "9adda7b3b55a0abd78d944f3c40eee2de90f509dcb9aeb3897ac3207c6a973c4",
   "pins" : [
     {
       "identity" : "commonmark-swift",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/objcio/commonmark-swift",
+      "location" : "https://github.com/chriseidhof/commonmark-swift.git",
       "state" : {
         "branch" : "master",
-        "revision" : "5d2836f4074780407aa04cca85306b2d918d64f9"
+        "revision" : "5b1de5a072f2bb89b7b1cf1ecb69ce4582561efa"
       }
     }
   ],
