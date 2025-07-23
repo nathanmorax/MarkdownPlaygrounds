@@ -84,6 +84,7 @@ extension String {
 final class ViewController: NSViewController {
     let editor = NSTextView()
     let output = NSTextView()
+    var codeBlocks: [CodeBlock] = []
     var observerToken: Any?
     
     override func loadView() {
@@ -105,7 +106,7 @@ final class ViewController: NSViewController {
     
     func parse() {
         guard let attributedString = editor.textStorage else { return }
-        attributedString.highlightMarkdown()
+        codeBlocks = attributedString.highlightMarkdown()
     }
 
     deinit {
@@ -113,35 +114,13 @@ final class ViewController: NSViewController {
     }
 }
 
-extension NSMutableAttributedString {
-    func highlightMarkdown() {
-        let node = Node(markdown: string)
-        
-        let lineOffsets = string.lineOffsets
-        func index(of pos: Position) -> String.Index {
-            let lineStart = lineOffsets[Int(pos.line-1)]
-            return string.index(lineStart, offsetBy: Int(pos.column-1))
-        }
-        
-        let defaultAttributes = Attributes(family: "Helvetica", size: 16)
-        setAttributes(defaultAttributes.atts, range: NSRange(location: 0, length: length))
-        
-        for c in node.children {
-            let start = index(of: c.start)
-            let end = index(of: c.end)
-            let nsRange = NSRange(start...end, in: string)
-            switch c.type {
-            case CMARK_NODE_HEADING:
-                addAttribute(.foregroundColor, value: NSColor.red, range: nsRange)
-            case CMARK_NODE_BLOCK_QUOTE:
-                addAttribute(.foregroundColor, value: NSColor.green, range: nsRange)
-            case CMARK_NODE_CODE_BLOCK:
-                var copy = defaultAttributes
-                copy.family = "Monaco"
-                addAttribute(.font, value: copy.font, range: nsRange)
-            default:
-                ()
-            }
+extension CommonMark.Node {
+    /// When visiting a node, you can modify the state, and the modified state gets passed on to all children.
+    func visitAll<State>(_ initial: State, _ callback: (Node, inout State) -> ()) {
+        for c in children {
+            var copy = initial
+            callback(c, &copy)
+            c.visitAll(copy, callback)
         }
     }
 }
