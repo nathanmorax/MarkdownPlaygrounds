@@ -8,6 +8,7 @@
 import Cocoa
 
 class Boilerplate {
+
     
     func splitView(_ views: [NSView]) -> NSSplitView {
         let sv = NSSplitView()
@@ -22,8 +23,8 @@ class Boilerplate {
         return sv
 
     }
+    
 }
-
 
 
 extension NSTextView {
