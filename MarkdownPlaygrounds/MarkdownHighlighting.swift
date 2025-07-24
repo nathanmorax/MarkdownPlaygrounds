@@ -44,7 +44,7 @@ extension NSMutableAttributedString {
                 attributes.bold = true
                 addAttribute(.font, value: attributes.font, range: nsRange)
             case CMARK_NODE_LINK:
-                //attributes.textColor = .linkColor
+                attributes.textColor = .linkColor
                 addAttribute(.foregroundColor, value: attributes.textColor, range: nsRange)
                 if let s = c.urlString, let u = URL(string: s) {
                     addAttribute(.link, value: u, range: nsRange)

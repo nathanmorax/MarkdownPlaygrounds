@@ -108,6 +108,12 @@ final class ViewController: NSViewController {
         guard let attributedString = editor.textStorage else { return }
         codeBlocks = attributedString.highlightMarkdown()
     }
+    
+    @objc func execute() {
+        let pos = editor.selectedRange().location
+        guard let block = codeBlocks.first(where: { $0.range.contains(pos) }) else { return }
+        print(block)
+    }
 
     deinit {
         if let t = observerToken { NotificationCenter.default.removeObserver(t) }
