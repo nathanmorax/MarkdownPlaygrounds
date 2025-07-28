@@ -1,13 +1,13 @@
 {
-  "originHash" : "9adda7b3b55a0abd78d944f3c40eee2de90f509dcb9aeb3897ac3207c6a973c4",
+  "originHash" : "03579d07d6606c2b7319603625415bbf5575e6fd976acf53b19e79eeaece0e3c",
   "pins" : [
     {
-      "identity" : "commonmark-swift",
+      "identity" : "ink",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/chriseidhof/commonmark-swift.git",
+      "location" : "https://github.com/JohnSundell/Ink",
       "state" : {
-        "branch" : "master",
-        "revision" : "5b1de5a072f2bb89b7b1cf1ecb69ce4582561efa"
+        "revision" : "bcc9f219900a62c4210e6db726035d7f03ae757b",
+        "version" : "0.6.0"
       }
     }
   ],

@@ -7,7 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		2DD9E9C72E3075F200E341BE /* CommonMark in Frameworks */ = {isa = PBXBuildFile; productRef = 2DD9E9C62E3075F200E341BE /* CommonMark */; };
+		2DC300252E3834AF00AAAC6F /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 2DC300242E3834AF00AAAC6F /* Ink */; };
+		2DC300272E3834AF00AAAC6F /* ink-cli in Frameworks */ = {isa = PBXBuildFile; productRef = 2DC300262E3834AF00AAAC6F /* ink-cli */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -27,7 +28,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2DD9E9C72E3075F200E341BE /* CommonMark in Frameworks */,
+				2DC300272E3834AF00AAAC6F /* ink-cli in Frameworks */,
+				2DC300252E3834AF00AAAC6F /* Ink in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -70,7 +72,8 @@
 			);
 			name = MarkdownPlaygrounds;
 			packageProductDependencies = (
-				2DD9E9C62E3075F200E341BE /* CommonMark */,
+				2DC300242E3834AF00AAAC6F /* Ink */,
+				2DC300262E3834AF00AAAC6F /* ink-cli */,
 			);
 			productName = MarkdownPlaygrounds;
 			productReference = 2DB9DA4E2E2F1EC400C34B6E /* MarkdownPlaygrounds.app */;
@@ -101,7 +104,7 @@
 			mainGroup = 2DB9DA452E2F1EC400C34B6E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				2DD9E9C52E3075F200E341BE /* XCRemoteSwiftPackageReference "commonmark-swift" */,
+				2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2DB9DA4F2E2F1EC400C34B6E /* Products */;
@@ -332,21 +335,26 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		2DD9E9C52E3075F200E341BE /* XCRemoteSwiftPackageReference "commonmark-swift" */ = {
+		2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/chriseidhof/commonmark-swift.git";
+			repositoryURL = "https://github.com/JohnSundell/Ink";
 			requirement = {
-				branch = master;
-				kind = branch;
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.6.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		2DD9E9C62E3075F200E341BE /* CommonMark */ = {
+		2DC300242E3834AF00AAAC6F /* Ink */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 2DD9E9C52E3075F200E341BE /* XCRemoteSwiftPackageReference "commonmark-swift" */;
-			productName = CommonMark;
+			package = 2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */;
+			productName = Ink;
+		};
+		2DC300262E3834AF00AAAC6F /* ink-cli */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */;
+			productName = "ink-cli";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

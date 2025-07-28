@@ -6,8 +6,7 @@
 //
 
 import Cocoa
-import CommonMark
-import Ccmark
+import Ink
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
@@ -86,6 +85,7 @@ final class ViewController: NSViewController {
     var observerToken: Any?
     var codeBlocks: [CodeBlock] = []
     var repl: REPL!
+    private var markdownParser = MarkdownParser()
     
     override func loadView() {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 30, height: 10))
@@ -98,6 +98,10 @@ final class ViewController: NSViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        // Configurar el parser de Ink con modificadores para detectar bloques de código
+        setupMarkdownParser()
+        
         repl = REPL(onStdOut: { [unowned output] text in
             output.textStorage?.append(NSAttributedString(string: text, attributes: [
                 .foregroundColor: NSColor.textColor
@@ -112,9 +116,99 @@ final class ViewController: NSViewController {
         }
     }
     
+    private func setupMarkdownParser() {
+        // Modificador para capturar bloques de código
+        let codeBlockModifier = Modifier(target: .codeBlocks) { [weak self] html, markdown in
+            // Aquí podemos procesar el bloque de código detectado por Ink
+            self?.processCodeBlock(markdown: String(markdown))
+            return html
+        }
+        
+        markdownParser.addModifier(codeBlockModifier)
+    }
+    
+    private func processCodeBlock(markdown: String) {
+        // Procesar el bloque de código detectado por Ink
+        // Este método se llamará cada vez que Ink encuentre un bloque de código
+        print("Bloque de código encontrado: \(markdown)")
+    }
+    
     func parse() {
         guard let attributedString = editor.textStorage else { return }
-        codeBlocks = attributedString.highlightMarkdown()
+        
+        // Usar Ink para parsear el markdown y extraer bloques de código
+        let markdownText = attributedString.string
+        codeBlocks = extractCodeBlocks(from: markdownText)
+        
+        // Aplicar sintaxis highlighting
+        highlightMarkdown(in: attributedString, with: codeBlocks)
+    }
+    
+    private func extractCodeBlocks(from markdown: String) -> [CodeBlock] {
+        var blocks: [CodeBlock] = []
+        let lines = markdown.components(separatedBy: .newlines)
+        var currentBlock: String?
+        var startLine = 0
+        var inCodeBlock = false
+        
+        for (index, line) in lines.enumerated() {
+            if line.hasPrefix("```") {
+                if inCodeBlock {
+                    // Fin del bloque de código
+                    if let blockContent = currentBlock {
+                        let range = calculateRange(for: startLine, endLine: index, in: markdown)
+                        blocks.append(CodeBlock(text: blockContent, range: range))
+                    }
+                    currentBlock = nil
+                    inCodeBlock = false
+                } else {
+                    // Inicio del bloque de código
+                    currentBlock = ""
+                    startLine = index + 1
+                    inCodeBlock = true
+                }
+            } else if inCodeBlock {
+                if currentBlock == nil {
+                    currentBlock = line
+                } else {
+                    currentBlock! += "\n" + line
+                }
+            }
+        }
+        
+        return blocks
+    }
+    
+    private func calculateRange(for startLine: Int, endLine: Int, in text: String) -> NSRange {
+        let lines = text.components(separatedBy: .newlines)
+        let beforeLines = Array(lines[0..<startLine])
+        let codeLines = Array(lines[startLine..<endLine])
+        
+        let startOffset = beforeLines.joined(separator: "\n").count + (startLine > 0 ? 1 : 0)
+        let length = codeLines.joined(separator: "\n").count
+        
+        return NSRange(location: startOffset, length: length)
+    }
+    
+    private func highlightMarkdown(in attributedString: NSMutableAttributedString, with codeBlocks: [CodeBlock]) {
+        // Aplicar estilo base
+        attributedString.addAttributes([
+            .foregroundColor: NSColor.textColor,
+            .font: NSFont.systemFont(ofSize: 12)
+        ], range: NSRange(location: 0, length: attributedString.length))
+        
+        // Resaltar bloques de código
+        for block in codeBlocks {
+            attributedString.addAttributes([
+                .backgroundColor: NSColor.controlBackgroundColor,
+                .foregroundColor: NSColor.systemBlue,
+                .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+            ], range: block.range)
+        }
+        
+        // Usar Ink para generar HTML y extraer información adicional si es necesario
+        let htmlOutput = markdownParser.html(from: attributedString.string)
+        // Puedes usar htmlOutput para otros propósitos si lo necesitas
     }
     
     @objc func execute() {
@@ -126,6 +220,12 @@ final class ViewController: NSViewController {
     deinit {
         if let t = observerToken { NotificationCenter.default.removeObserver(t) }
     }
+}
+
+// Estructura para representar bloques de código
+struct CodeBlock {
+    let text: String
+    let range: NSRange
 }
 
 final class REPL {
@@ -166,15 +266,3 @@ final class REPL {
         stdIn.fileHandleForWriting.write(code.data(using: .utf8)!)
     }
 }
-
-extension CommonMark.Node {
-    /// When visiting a node, you can modify the state, and the modified state gets passed on to all children.
-    func visitAll<State>(_ initial: State, _ callback: (Node, inout State) -> ()) {
-        for c in children {
-            var copy = initial
-            callback(c, &copy)
-            c.visitAll(copy, callback)
-        }
-    }
-}
-
