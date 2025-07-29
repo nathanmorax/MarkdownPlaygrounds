@@ -33,6 +33,7 @@ extension NSTextView {
         scrollView.hasVerticalScroller = true
         
         isEditable = editable
+        isRichText = true
         textContainerInset = inset
         autoresizingMask = [.width]
         isAutomaticQuoteSubstitutionEnabled = false
@@ -47,21 +48,26 @@ extension NSApplication {
         let appMenu = NSMenuItem()
         appMenu.submenu = NSMenu()
         let appName = ProcessInfo.processInfo.processName
+        
         appMenu.submenu?.addItem(NSMenuItem(title: "About \(appName)", action: #selector(NSApplication.orderFrontStandardAboutPanel(_:)), keyEquivalent: ""))
         appMenu.submenu?.addItem(NSMenuItem.separator())
+        
         let services = NSMenuItem(title: "Services", action: nil, keyEquivalent: "")
-        self.servicesMenu = NSMenu()
-        services.submenu = self.servicesMenu
+        let servicesMenu = NSMenu()  // <-- variable local, nueva instancia
+        services.submenu = servicesMenu
         appMenu.submenu?.addItem(services)
+        
         appMenu.submenu?.addItem(NSMenuItem.separator())
         appMenu.submenu?.addItem(NSMenuItem(title: "Hide \(appName)", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"))
+        
         let hideOthers = NSMenuItem(title: "Hide Others", action: #selector(NSApplication.hideOtherApplications(_:)), keyEquivalent: "h")
         hideOthers.keyEquivalentModifierMask = [.command, .option]
         appMenu.submenu?.addItem(hideOthers)
+        
         appMenu.submenu?.addItem(NSMenuItem(title: "Show All", action: #selector(NSApplication.unhideAllApplications(_:)), keyEquivalent: ""))
         appMenu.submenu?.addItem(NSMenuItem.separator())
         appMenu.submenu?.addItem(NSMenuItem(title: "Quit \(appName)", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
-
+        
         let fileMenu = NSMenuItem()
         fileMenu.submenu = NSMenu(title: "File")
         fileMenu.submenu?.addItem(NSMenuItem(title: "New", action: #selector(NSDocumentController.newDocument(_:)), keyEquivalent: "n"))
@@ -70,7 +76,7 @@ extension NSApplication {
         fileMenu.submenu?.addItem(NSMenuItem(title: "Close", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"))
         fileMenu.submenu?.addItem(NSMenuItem(title: "Save…", action: #selector(NSDocument.save(_:)), keyEquivalent: "s"))
         fileMenu.submenu?.addItem(NSMenuItem(title: "Revert to Saved", action: #selector(NSDocument.revertToSaved(_:)), keyEquivalent: ""))
-
+        
         let editMenu = NSMenuItem()
         editMenu.submenu = NSMenu(title: "Edit")
         editMenu.submenu?.addItem(NSMenuItem(title: "Undo", action: Selector(("undo:")), keyEquivalent: "z"))
@@ -87,7 +93,7 @@ extension NSApplication {
         
         let windowMenu = NSMenuItem()
         windowMenu.submenu = NSMenu(title: "Window")
-        windowMenu.submenu?.addItem(NSMenuItem(title: "Minmize", action: #selector(NSWindow.miniaturize(_:)), keyEquivalent: "m"))
+        windowMenu.submenu?.addItem(NSMenuItem(title: "Minimize", action: #selector(NSWindow.miniaturize(_:)), keyEquivalent: "m"))
         windowMenu.submenu?.addItem(NSMenuItem(title: "Zoom", action: #selector(NSWindow.performZoom(_:)), keyEquivalent: ""))
         windowMenu.submenu?.addItem(NSMenuItem.separator())
         windowMenu.submenu?.addItem(NSMenuItem(title: "Show All", action: #selector(NSApplication.arrangeInFront(_:)), keyEquivalent: "m"))
@@ -101,6 +107,7 @@ extension NSApplication {
         return mainMenu
     }
 }
+
 
 let accentColors: [NSColor] = [
     // From: https://ethanschoonover.com/solarized/#the-values

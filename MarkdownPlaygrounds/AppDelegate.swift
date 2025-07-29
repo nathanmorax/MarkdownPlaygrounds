@@ -11,10 +11,25 @@ import Ink
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillFinishLaunching(_ notification: Notification) {
-        // First instance becomes the shared document controller
         _ = MarkdownDocumentController()
     }
+    
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        NSApp.mainMenu = NSApp.customMenu
+    }
+    func printMenu(_ menu: NSMenu?) {
+        guard let menu = menu else { return }
+        for item in menu.items {
+            print("Menu: \(item.title)")
+            if let submenu = item.submenu {
+                for subitem in submenu.items {
+                    print("  Subitem: \(subitem.title)")
+                }
+            }
+        }
+    }
 }
+
 
 class MarkdownDocumentController: NSDocumentController {
     override var documentClassNames: [String] {
@@ -104,7 +119,6 @@ final class ViewController: NSViewController {
         super.viewDidLoad()
         
         setupMarkdownParser()
-        setupKeyboardShortcuts()
         
         repl = REPL(onStdOut: { [weak self] text in
             DispatchQueue.main.async {
@@ -132,13 +146,7 @@ final class ViewController: NSViewController {
             self?.parse()
         }
         
-        // Parse inicial
         parse()
-    }
-    
-    private func setupKeyboardShortcuts() {
-        // Configurar responder chain para capturar Cmd+R
-        editor.nextResponder = self
     }
     
     override func keyDown(with event: NSEvent) {
@@ -169,6 +177,7 @@ final class ViewController: NSViewController {
         
         // Aplicar highlighting
         highlightMarkdown(in: textStorage, with: codeBlocks)
+        
     }
     
     private func extractCodeBlocks(from markdown: String) -> [CodeBlock] {
@@ -253,10 +262,13 @@ final class ViewController: NSViewController {
             .backgroundColor: NSColor.clear
         ], range: fullRange)
         
+        textStorage.highlightMarkdownLists()
+
         
-        ///  Heading
+        // Heading
         textStorage.highlightMarkdownHeaders()
         
+
         // Highlight para bloques de código
         for block in codeBlocks {
             guard block.range.location + block.range.length <= textStorage.length else { continue }
@@ -271,25 +283,17 @@ final class ViewController: NSViewController {
     }
     
 
-    
-    private func highlightCodeDelimiters(in textStorage: NSMutableAttributedString) {
-        let text = textStorage.string as NSString
-        let pattern = "```[a-zA-Z]*"
-        
-        do {
-            let regex = try NSRegularExpression(pattern: pattern)
-            let matches = regex.matches(in: textStorage.string, range: NSRange(location: 0, length: text.length))
-            
-            for match in matches {
-                textStorage.addAttributes([
-                    .foregroundColor: NSColor.systemGray,
-                    .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .light)
-                ], range: match.range)
-            }
-        } catch {
-            print("Error highlighting delimiters: \(error)")
-        }
+    func attributedString(from html: String) -> NSAttributedString {
+        guard let data = html.data(using: .utf8) else { return NSAttributedString() }
+
+        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
+            .documentType: NSAttributedString.DocumentType.html,
+            .characterEncoding: String.Encoding.utf8.rawValue
+        ]
+
+        return try! NSAttributedString(data: data, options: options, documentAttributes: nil)
     }
+
     
     @objc func execute() {
         let cursorPosition = editor.selectedRange().location

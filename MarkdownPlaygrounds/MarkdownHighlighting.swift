@@ -45,6 +45,49 @@ extension NSMutableAttributedString {
             currentIndex += lineLength + 1 // +1 for \n
         }
     }
+    
+    func highlightMarkdownLists() {
+        let text = self.string
+        let lines = text.components(separatedBy: .newlines)
+        var currentIndex = 0
+
+        for line in lines {
+            let lineLength = line.count
+            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmedLine.hasPrefix("- ") || trimmedLine.hasPrefix("* ") || trimmedLine.hasPrefix("+ ") {
+                // Rango de toda la línea
+                let lineRange = NSRange(location: currentIndex, length: lineLength)
+
+                // Crear estilo de párrafo con sangría
+                let paragraphStyle = NSMutableParagraphStyle()
+                paragraphStyle.headIndent = 20  // sangría para el texto después del bullet
+                paragraphStyle.firstLineHeadIndent = 0
+                paragraphStyle.paragraphSpacing = 4
+
+                // Estilo para el bullet (el signo - * +)
+                let bulletRange = NSRange(location: currentIndex, length: 2)
+                self.addAttributes([
+                    .foregroundColor: NSColor.systemBlue,
+                    .font: NSFont.boldSystemFont(ofSize: 14)
+                ], range: bulletRange)
+
+                // Estilo para el texto del ítem con indentación
+                let textRange = NSRange(location: currentIndex, length: lineLength)
+                self.addAttributes([
+                    .paragraphStyle: paragraphStyle,
+                    .foregroundColor: NSColor.labelColor,
+                    .font: NSFont.systemFont(ofSize: 14)
+                ], range: textRange)
+            }
+
+            currentIndex += lineLength + 1 // +1 por el salto de línea
+        }
+    }
+
 }
+
+
+
 
 
