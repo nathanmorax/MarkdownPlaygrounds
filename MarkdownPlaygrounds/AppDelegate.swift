@@ -17,17 +17,6 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.mainMenu = NSApp.customMenu
     }
-    func printMenu(_ menu: NSMenu?) {
-        guard let menu = menu else { return }
-        for item in menu.items {
-            print("Menu: \(item.title)")
-            if let submenu = item.submenu {
-                for subitem in submenu.items {
-                    print("  Subitem: \(subitem.title)")
-                }
-            }
-        }
-    }
 }
 
 
@@ -340,46 +329,46 @@ final class REPL {
         self.onStdOut = onStdOut
         self.onStdErr = onStdErr
     }
-    
+
     func execute(_ code: String) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             let process = Process()
             let stdOut = Pipe()
             let stdErr = Pipe()
-            
-            // Mejorar el código para mejor output
-            
+            let stdIn = Pipe()
+
             process.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
             process.arguments = ["-"]
-            process.standardInput = Pipe()
+            process.standardInput = stdIn
             process.standardOutput = stdOut
             process.standardError = stdErr
-            
+
             do {
                 try process.run()
-                
-                if let stdin = process.standardInput as? Pipe {
-                    stdin.fileHandleForWriting.closeFile()
+
+                if let data = code.data(using: .utf8) {
+                    stdIn.fileHandleForWriting.write(data)
                 }
-                
+                stdIn.fileHandleForWriting.closeFile()
+
                 let outputData = stdOut.fileHandleForReading.readDataToEndOfFile()
                 let errorData = stdErr.fileHandleForReading.readDataToEndOfFile()
-                
+
                 process.waitUntilExit()
-                
+
                 if let output = String(data: outputData, encoding: .utf8), !output.isEmpty {
                     self?.onStdOut(output)
                 } else {
                     self?.onStdOut("✅ Código ejecutado (sin salida)\n")
                 }
-                
+
                 if let error = String(data: errorData, encoding: .utf8), !error.isEmpty {
                     self?.onStdErr("❌ Error:\n\(error)\n")
                 }
-                
             } catch {
                 self?.onStdErr("❌ Error ejecutando Swift: \(error)\n")
             }
         }
     }
 }
+
