@@ -7,6 +7,13 @@
 
 import Cocoa
 
+
+// Estructura para representar bloques de código
+struct CodeBlock {
+    let text: String
+    let range: NSRange
+}
+
 class Boilerplate {
 
     
@@ -40,6 +47,18 @@ extension NSTextView {
         isAutomaticDashSubstitutionEnabled = false
         scrollView.documentView = self
         return scrollView
+    }
+}
+
+extension String {
+    var lineOffsets: [String.Index] {
+        var result = [startIndex]
+        for i in indices {
+            if self[i] == "\n" { // todo check if we also need \r and \r\n
+                result.append(index(after: i))
+            }
+        }
+        return result
     }
 }
 
