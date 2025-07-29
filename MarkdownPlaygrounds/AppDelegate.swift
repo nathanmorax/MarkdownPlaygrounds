@@ -58,7 +58,7 @@ class MarkdownDocument: NSDocument {
     
     override func makeWindowControllers() {
         let window = NSWindow(contentViewController: contentViewController)
-        window.setContentSize(NSSize(width: 800, height: 600))
+        window.setContentSize(NSSize(width: 1000, height: 700))
         let wc = NSWindowController(window: window)
         wc.contentViewController = contentViewController
         addWindowController(wc)
@@ -88,10 +88,14 @@ final class ViewController: NSViewController {
     private var markdownParser = MarkdownParser()
     
     override func loadView() {
-        let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 30, height: 10))
-        let outputSV = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 10, height: 10))
-        outputSV.widthAnchor.constraint(greaterThanOrEqualToConstant: 200).isActive = true
+        let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 20, height: 15))
+        let outputSV = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 15, height: 15))
+        outputSV.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
         editor.allowsUndo = true
+        
+        // Configurar colores y fuentes
+        editor.backgroundColor = NSColor.controlBackgroundColor
+        output.backgroundColor = NSColor.controlBackgroundColor
         
         self.view = Boilerplate().splitView([editorSV, outputSV])
     }
@@ -99,126 +103,221 @@ final class ViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        // Configurar el parser de Ink con modificadores para detectar bloques de código
         setupMarkdownParser()
+        setupKeyboardShortcuts()
         
-        repl = REPL(onStdOut: { [unowned output] text in
-            output.textStorage?.append(NSAttributedString(string: text, attributes: [
-                .foregroundColor: NSColor.textColor
-            ]))
-        }, onStdErr: { [unowned output] text in
-            output.textStorage?.append(NSAttributedString(string: text, attributes: [
-                .foregroundColor: NSColor.red
-            ]))
+        repl = REPL(onStdOut: { [weak self] text in
+            DispatchQueue.main.async {
+                self?.output.textStorage?.append(NSAttributedString(string: text, attributes: [
+                    .foregroundColor: NSColor.labelColor,
+                    .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+                ]))
+                self?.output.scrollToEndOfDocument(nil)
+            }
+        }, onStdErr: { [weak self] text in
+            DispatchQueue.main.async {
+                self?.output.textStorage?.append(NSAttributedString(string: text, attributes: [
+                    .foregroundColor: NSColor.systemRed,
+                    .font: NSFont.monospacedSystemFont(ofSize: 16, weight: .regular)
+                ]))
+                self?.output.scrollToEndOfDocument(nil)
+            }
         })
-        observerToken = NotificationCenter.default.addObserver(forName: NSTextView.didChangeNotification, object: editor, queue: nil) { [unowned self] _ in
-            self.parse()
+        
+        observerToken = NotificationCenter.default.addObserver(
+            forName: NSTextView.didChangeNotification,
+            object: editor,
+            queue: nil
+        ) { [weak self] _ in
+            self?.parse()
         }
+        
+        // Parse inicial
+        parse()
+    }
+    
+    private func setupKeyboardShortcuts() {
+        // Configurar responder chain para capturar Cmd+R
+        editor.nextResponder = self
+    }
+    
+    override func keyDown(with event: NSEvent) {
+        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "r" {
+            execute()
+            return
+        }
+        super.keyDown(with: event)
     }
     
     private func setupMarkdownParser() {
-        // Modificador para capturar bloques de código
         let codeBlockModifier = Modifier(target: .codeBlocks) { [weak self] html, markdown in
-            // Aquí podemos procesar el bloque de código detectado por Ink
             self?.processCodeBlock(markdown: String(markdown))
             return html
         }
-        
         markdownParser.addModifier(codeBlockModifier)
     }
     
     private func processCodeBlock(markdown: String) {
-        // Procesar el bloque de código detectado por Ink
-        // Este método se llamará cada vez que Ink encuentre un bloque de código
         print("Bloque de código encontrado: \(markdown)")
     }
     
     func parse() {
-        guard let attributedString = editor.textStorage else { return }
+        guard let textStorage = editor.textStorage else { return }
         
-        // Usar Ink para parsear el markdown y extraer bloques de código
-        let markdownText = attributedString.string
+        let markdownText = textStorage.string
         codeBlocks = extractCodeBlocks(from: markdownText)
         
-        // Aplicar sintaxis highlighting
-        highlightMarkdown(in: attributedString, with: codeBlocks)
+        // Aplicar highlighting
+        highlightMarkdown(in: textStorage, with: codeBlocks)
     }
     
     private func extractCodeBlocks(from markdown: String) -> [CodeBlock] {
         var blocks: [CodeBlock] = []
-        let lines = markdown.components(separatedBy: .newlines)
-        var currentBlock: String?
-        var startLine = 0
-        var inCodeBlock = false
+        let text = markdown as NSString
         
-        for (index, line) in lines.enumerated() {
-            if line.hasPrefix("```") {
+        // Expresión regular para encontrar bloques de código
+        let pattern = "```(?:swift)?\\n([\\s\\S]*?)\\n```"
+        
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: [])
+            let matches = regex.matches(in: markdown, options: [], range: NSRange(location: 0, length: text.length))
+            
+            for match in matches {
+                if match.numberOfRanges >= 2 {
+                    let contentRange = match.range(at: 1)
+                    let content = text.substring(with: contentRange)
+                    blocks.append(CodeBlock(text: content, range: contentRange))
+                }
+            }
+        } catch {
+            print("Error en regex: \(error)")
+            // Fallback al método manual
+            return extractCodeBlocksManually(from: markdown)
+        }
+        
+        return blocks
+    }
+    
+    private func extractCodeBlocksManually(from markdown: String) -> [CodeBlock] {
+        var blocks: [CodeBlock] = []
+        let lines = markdown.components(separatedBy: .newlines)
+        var currentBlockLines: [String] = []
+        var inCodeBlock = false
+        var blockStartIndex = 0
+        
+        for (lineIndex, line) in lines.enumerated() {
+            if line.trimmingCharacters(in: .whitespaces).hasPrefix("```") {
                 if inCodeBlock {
-                    // Fin del bloque de código
-                    if let blockContent = currentBlock {
-                        let range = calculateRange(for: startLine, endLine: index, in: markdown)
-                        blocks.append(CodeBlock(text: blockContent, range: range))
-                    }
-                    currentBlock = nil
+                    // Fin del bloque
+                    let blockContent = currentBlockLines.joined(separator: "\n")
+                    let range = calculateRangeForLines(from: blockStartIndex, to: lineIndex - 1, in: markdown)
+                    blocks.append(CodeBlock(text: blockContent, range: range))
+                    currentBlockLines = []
                     inCodeBlock = false
                 } else {
-                    // Inicio del bloque de código
-                    currentBlock = ""
-                    startLine = index + 1
+                    // Inicio del bloque
                     inCodeBlock = true
+                    blockStartIndex = lineIndex + 1
+                    currentBlockLines = []
                 }
             } else if inCodeBlock {
-                if currentBlock == nil {
-                    currentBlock = line
-                } else {
-                    currentBlock! += "\n" + line
-                }
+                currentBlockLines.append(line)
             }
         }
         
         return blocks
     }
     
-    private func calculateRange(for startLine: Int, endLine: Int, in text: String) -> NSRange {
+    private func calculateRangeForLines(from startLine: Int, to endLine: Int, in text: String) -> NSRange {
         let lines = text.components(separatedBy: .newlines)
+        guard startLine < lines.count && endLine < lines.count else {
+            return NSRange(location: 0, length: 0)
+        }
+        
         let beforeLines = Array(lines[0..<startLine])
-        let codeLines = Array(lines[startLine..<endLine])
+        let targetLines = Array(lines[startLine...endLine])
         
         let startOffset = beforeLines.joined(separator: "\n").count + (startLine > 0 ? 1 : 0)
-        let length = codeLines.joined(separator: "\n").count
+        let length = targetLines.joined(separator: "\n").count
         
         return NSRange(location: startOffset, length: length)
     }
     
-    private func highlightMarkdown(in attributedString: NSMutableAttributedString, with codeBlocks: [CodeBlock]) {
-        // Aplicar estilo base
-        attributedString.addAttributes([
-            .foregroundColor: NSColor.textColor,
-            .font: NSFont.systemFont(ofSize: 12)
-        ], range: NSRange(location: 0, length: attributedString.length))
+    private func highlightMarkdown(in textStorage: NSMutableAttributedString, with codeBlocks: [CodeBlock]) {
+        let fullRange = NSRange(location: 0, length: textStorage.length)
         
-        // Resaltar bloques de código
+        // Aplicar estilo base
+        textStorage.addAttributes([
+            .foregroundColor: NSColor.labelColor,
+            .font: NSFont.systemFont(ofSize: 14),
+            .backgroundColor: NSColor.clear
+        ], range: fullRange)
+        
+        
+        ///  Heading
+        textStorage.highlightMarkdownHeaders()
+        
+        // Highlight para bloques de código
         for block in codeBlocks {
-            attributedString.addAttributes([
-                .backgroundColor: NSColor.controlBackgroundColor,
+            guard block.range.location + block.range.length <= textStorage.length else { continue }
+            
+            textStorage.addAttributes([
+                .backgroundColor: NSColor.quaternaryLabelColor.withAlphaComponent(0.3),
                 .foregroundColor: NSColor.systemBlue,
-                .font: NSFont.monospacedSystemFont(ofSize: 11, weight: .regular)
+                .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .medium)
             ], range: block.range)
         }
+    
+    }
+    
+
+    
+    private func highlightCodeDelimiters(in textStorage: NSMutableAttributedString) {
+        let text = textStorage.string as NSString
+        let pattern = "```[a-zA-Z]*"
         
-        // Usar Ink para generar HTML y extraer información adicional si es necesario
-        let htmlOutput = markdownParser.html(from: attributedString.string)
-        // Puedes usar htmlOutput para otros propósitos si lo necesitas
+        do {
+            let regex = try NSRegularExpression(pattern: pattern)
+            let matches = regex.matches(in: textStorage.string, range: NSRange(location: 0, length: text.length))
+            
+            for match in matches {
+                textStorage.addAttributes([
+                    .foregroundColor: NSColor.systemGray,
+                    .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .light)
+                ], range: match.range)
+            }
+        } catch {
+            print("Error highlighting delimiters: \(error)")
+        }
     }
     
     @objc func execute() {
-        let pos = editor.selectedRange().location
-        guard let block = codeBlocks.first(where: { $0.range.contains(pos) }) else { return }
+        let cursorPosition = editor.selectedRange().location
+        
+        // Encontrar el bloque de código que contiene el cursor
+        guard let block = codeBlocks.first(where: { $0.range.contains(cursorPosition) }) else {
+            // Si no hay bloque, mostrar mensaje
+            output.textStorage?.append(NSAttributedString(string: "❌ Coloca el cursor dentro de un bloque de código Swift\n\n", attributes: [
+                .foregroundColor: NSColor.systemOrange,
+                .font: NSFont.boldSystemFont(ofSize: 12)
+            ]))
+            return
+        }
+        
+        // Limpiar output y ejecutar
+        output.textStorage?.mutableString.setString("")
+        output.textStorage?.append(NSAttributedString(string: "🚀 Ejecutando código...\n\n", attributes: [
+            .foregroundColor: NSColor.systemGreen,
+            .font: NSFont.boldSystemFont(ofSize: 12)
+        ]))
+        
         repl.execute(block.text)
     }
     
     deinit {
-        if let t = observerToken { NotificationCenter.default.removeObserver(t) }
+        if let t = observerToken {
+            NotificationCenter.default.removeObserver(t)
+        }
     }
 }
 
@@ -228,41 +327,55 @@ struct CodeBlock {
     let range: NSRange
 }
 
+
 final class REPL {
-    private let process = Process()
-    private let stdIn = Pipe()
-    private let stdErr = Pipe()
-    private let stdOut = Pipe()
-    
-    private var stdOutToken: Any?
-    private var stdErrToken: Any?
+    private let onStdOut: (String) -> ()
+    private let onStdErr: (String) -> ()
 
     init(onStdOut: @escaping (String) -> (), onStdErr: @escaping (String) -> ()) {
-        process.launchPath = "/usr/bin/swift"
-        process.standardInput = stdIn.fileHandleForReading
-        process.standardOutput = stdOut.fileHandleForWriting
-        process.standardError = stdErr.fileHandleForWriting
-        
-        stdOutToken = NotificationCenter.default.addObserver(forName: .NSFileHandleDataAvailable, object: stdOut.fileHandleForReading, queue: nil, using: { [unowned self] note in
-            let data = self.stdOut.fileHandleForReading.availableData
-            let string = String(data: data, encoding: .utf8)!
-            onStdOut(string)
-            self.stdOut.fileHandleForReading.waitForDataInBackgroundAndNotify()
-        })
-
-        stdErrToken = NotificationCenter.default.addObserver(forName: .NSFileHandleDataAvailable, object: stdErr.fileHandleForReading, queue: nil, using: { [unowned self] note in
-            let data = self.stdErr.fileHandleForReading.availableData
-            let string = String(data: data, encoding: .utf8)!
-            onStdErr(string)
-            self.stdErr.fileHandleForReading.waitForDataInBackgroundAndNotify()
-        })
-
-        process.launch()
-        stdOut.fileHandleForReading.waitForDataInBackgroundAndNotify()
-        stdErr.fileHandleForReading.waitForDataInBackgroundAndNotify()
+        self.onStdOut = onStdOut
+        self.onStdErr = onStdErr
     }
     
     func execute(_ code: String) {
-        stdIn.fileHandleForWriting.write(code.data(using: .utf8)!)
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let process = Process()
+            let stdOut = Pipe()
+            let stdErr = Pipe()
+            
+            // Mejorar el código para mejor output
+            
+            process.executableURL = URL(fileURLWithPath: "/usr/bin/swift")
+            process.arguments = ["-"]
+            process.standardInput = Pipe()
+            process.standardOutput = stdOut
+            process.standardError = stdErr
+            
+            do {
+                try process.run()
+                
+                if let stdin = process.standardInput as? Pipe {
+                    stdin.fileHandleForWriting.closeFile()
+                }
+                
+                let outputData = stdOut.fileHandleForReading.readDataToEndOfFile()
+                let errorData = stdErr.fileHandleForReading.readDataToEndOfFile()
+                
+                process.waitUntilExit()
+                
+                if let output = String(data: outputData, encoding: .utf8), !output.isEmpty {
+                    self?.onStdOut(output)
+                } else {
+                    self?.onStdOut("✅ Código ejecutado (sin salida)\n")
+                }
+                
+                if let error = String(data: errorData, encoding: .utf8), !error.isEmpty {
+                    self?.onStdErr("❌ Error:\n\(error)\n")
+                }
+                
+            } catch {
+                self?.onStdErr("❌ Error ejecutando Swift: \(error)\n")
+            }
+        }
     }
 }
