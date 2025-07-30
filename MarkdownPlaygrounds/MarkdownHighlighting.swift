@@ -5,63 +5,95 @@
 //  Created by Jonathan Mora on 22/07/25.
 //
 
-
 import AppKit
 
-extension NSMutableAttributedString {
-    func applyBasicMarkdown(to textStorage: NSMutableAttributedString) {
-        let fullText = textStorage.string as NSString
-        let lines = fullText.components(separatedBy: .newlines)
+// MARK: - Markdown Highlighter
+final class MarkdownHighlighter {
+    
+    // MARK: - Constants
+    private struct Style {
+        static let headerSizes: [Int: CGFloat] = [1: 28, 2: 24, 3: 20, 4: 18, 5: 16, 6: 14]
+        static let textColor = NSColor.white
+        static let highlightColor = NSColor.systemGreen
+        static let defaultFont = NSFont.systemFont(ofSize: 14)
+        static let listIndent: CGFloat = 20
+    }
+    
+    // MARK: - Public Methods
+    func applyHighlighting(to textStorage: NSMutableAttributedString) {
+        let lines = textStorage.string.components(separatedBy: .newlines)
         var location = 0
         
         for line in lines {
-            let length = line.count
-            let range = NSRange(location: location, length: length)
+            let range = NSRange(location: location, length: line.count)
             
-            // Detectar encabezados del H1 al H6
-            if let headingMatch = line.range(of: #"^(#{1,6})\s"#, options: .regularExpression) {
-                let hashes = line[headingMatch].trimmingCharacters(in: .whitespaces)
-                let level = hashes.count
-                let fontSize: CGFloat
-                
-                switch level {
-                case 1: fontSize = 28
-                case 2: fontSize = 24
-                case 3: fontSize = 20
-                case 4: fontSize = 18
-                case 5: fontSize = 16
-                case 6: fontSize = 14
-                default: fontSize = 12
-                }
-                
-                textStorage.addAttributes([
-                    .font: NSFont.boldSystemFont(ofSize: fontSize),
-                    .foregroundColor: NSColor.white
-                ], range: range)
-                
-                
-            } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
-                // Cambiar solo el símbolo visual
-                let symbolRange = NSRange(location: location, length: 2)
-                textStorage.replaceCharacters(in: symbolRange, with: "• ")
-
-                // Estilo de párrafo para formateo de listas
-                let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.headIndent = 20
-                paragraphStyle.firstLineHeadIndent = 20
-                paragraphStyle.paragraphSpacing = 4
-
-                let adjustedLength = line.count - 2 + 2 // nueva longitud tras reemplazo
-
-                textStorage.addAttributes([
-                    .paragraphStyle: paragraphStyle,
-                    .foregroundColor: NSColor.white
-                ], range: NSRange(location: location, length: adjustedLength))
-            }
-
-            location += length + 1
+            applyHighlight(line: line, textStorage: textStorage, location: location)
+            applyHeading(line: line, textStorage: textStorage, range: range)
+            applyBulletList(line: line, textStorage: textStorage, range: range, location: location)
+            
+            location += line.count + 1
         }
+    }
+    
+    // MARK: - Private Methods
+    private func applyHighlight(line: String, textStorage: NSMutableAttributedString, location: Int) {
+        guard let match = line.range(of: #"==(.+?)=="#, options: .regularExpression) else { return }
+        
+        let nsRange = NSRange(match, in: line)
+        let highlightRange = NSRange(
+            location: location + nsRange.location + 2,
+            length: nsRange.length - 4
+        )
+        
+        textStorage.addAttributes([
+            .font: NSFont.boldSystemFont(ofSize: 14),
+            .foregroundColor: Style.textColor,
+            .backgroundColor: Style.highlightColor
+        ], range: highlightRange)
+    }
+    
+    private func applyHeading(line: String, textStorage: NSMutableAttributedString, range: NSRange) {
+        guard let headingMatch = line.range(of: #"^(#{1,6})\s"#, options: .regularExpression) else { return }
+        
+        let hashes = line[headingMatch].trimmingCharacters(in: .whitespaces)
+        let level = hashes.count
+        let fontSize = Style.headerSizes[level] ?? 12
+        
+        textStorage.addAttributes([
+            .font: NSFont.boldSystemFont(ofSize: fontSize),
+            .foregroundColor: Style.textColor
+        ], range: range)
+    }
+    
+    private func applyBulletList(line: String, textStorage: NSMutableAttributedString, range: NSRange, location: Int) {
+        guard line.hasPrefix("- ") || line.hasPrefix("* ") else { return }
+        
+        // Replace with bullet
+        textStorage.replaceCharacters(in: NSRange(location: location, length: 2), with: "• ")
+        
+        // Apply list styling
+        let paragraphStyle = NSMutableParagraphStyle()
+        paragraphStyle.headIndent = Style.listIndent
+        paragraphStyle.firstLineHeadIndent = Style.listIndent
+        paragraphStyle.paragraphSpacing = 4
+        
+        textStorage.addAttributes([
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: Style.textColor,
+            .font: Style.defaultFont
+        ], range: range)
     }
 }
 
-
+// MARK: - NSMutableAttributedString Extension
+extension NSMutableAttributedString {
+    func applyBasicMarkdown() {
+        let highlighter = MarkdownHighlighter()
+        highlighter.applyHighlighting(to: self)
+    }
+    
+    // Mantener compatibilidad con el método original
+    func applyBasicMarkdown(to textStorage: NSMutableAttributedString) {
+        textStorage.applyBasicMarkdown()
+    }
+}
