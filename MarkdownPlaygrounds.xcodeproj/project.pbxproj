@@ -6,11 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		2DC300252E3834AF00AAAC6F /* Ink in Frameworks */ = {isa = PBXBuildFile; productRef = 2DC300242E3834AF00AAAC6F /* Ink */; };
-		2DC300272E3834AF00AAAC6F /* ink-cli in Frameworks */ = {isa = PBXBuildFile; productRef = 2DC300262E3834AF00AAAC6F /* ink-cli */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXFileReference section */
 		2DB9DA4E2E2F1EC400C34B6E /* MarkdownPlaygrounds.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MarkdownPlaygrounds.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -28,8 +23,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				2DC300272E3834AF00AAAC6F /* ink-cli in Frameworks */,
-				2DC300252E3834AF00AAAC6F /* Ink in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -72,8 +65,6 @@
 			);
 			name = MarkdownPlaygrounds;
 			packageProductDependencies = (
-				2DC300242E3834AF00AAAC6F /* Ink */,
-				2DC300262E3834AF00AAAC6F /* ink-cli */,
 			);
 			productName = MarkdownPlaygrounds;
 			productReference = 2DB9DA4E2E2F1EC400C34B6E /* MarkdownPlaygrounds.app */;
@@ -104,7 +95,6 @@
 			mainGroup = 2DB9DA452E2F1EC400C34B6E;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 2DB9DA4F2E2F1EC400C34B6E /* Products */;
@@ -333,30 +323,6 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
-
-/* Begin XCRemoteSwiftPackageReference section */
-		2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/JohnSundell/Ink";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 0.6.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		2DC300242E3834AF00AAAC6F /* Ink */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */;
-			productName = Ink;
-		};
-		2DC300262E3834AF00AAAC6F /* ink-cli */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 2DC300232E3834AF00AAAC6F /* XCRemoteSwiftPackageReference "Ink" */;
-			productName = "ink-cli";
-		};
-/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 2DB9DA462E2F1EC400C34B6E /* Project object */;
 }

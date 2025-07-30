@@ -5,7 +5,6 @@
 //  Created by Jonathan Mora on 28/07/25.
 //
 import Cocoa
-import Ink
 
 final class ViewController: NSViewController {
     let editor = NSTextView()
@@ -13,10 +12,7 @@ final class ViewController: NSViewController {
     var observerToken: Any?
     var codeBlocks: [CodeBlock] = []
     var repl: REPL!
-    private var markdownParser = MarkdownParser()
     
-    // Nueva propiedad para controlar el modo de vista
-    private var isMarkdownMode = true
     
     override func loadView() {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 20, height: 15))
@@ -34,8 +30,6 @@ final class ViewController: NSViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        setupMarkdownParser()
-        setupToolbar()
         
         repl = REPL(onStdOut: { [weak self] text in
             DispatchQueue.main.async {
@@ -70,45 +64,7 @@ final class ViewController: NSViewController {
         """
         parse()
     }
-    
-    private func setupToolbar() {
-        guard let window = view.window else { return }
-        
-        let toolbar = NSToolbar(identifier: "MarkdownToolbar")
-        toolbar.delegate = self
-        toolbar.allowsUserCustomization = false
-        window.toolbar = toolbar
-    }
-    
-    override func keyDown(with event: NSEvent) {
-        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "r" {
-            execute()
-            return
-        }
-        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "m" {
-            toggleMode()
-            return
-        }
-        super.keyDown(with: event)
-    }
-    
-    private func setupMarkdownParser() {
-        let codeBlockModifier = Modifier(target: .codeBlocks) { [weak self] html, markdown in
-            self?.processCodeBlock(markdown: String(markdown))
-            return html
-        }
-        markdownParser.addModifier(codeBlockModifier)
-    }
-    
-    private func processCodeBlock(markdown: String) {
-        print("Bloque de código encontrado: \(markdown)")
-    }
-    
-    @objc func toggleMode() {
-        isMarkdownMode.toggle()
-        parse()
-    }
-    
+
     func parse() {
         guard let textStorage = editor.textStorage else { return }
         
@@ -252,12 +208,8 @@ final class ViewController: NSViewController {
     @objc func execute() {
         let cursorPosition = editor.selectedRange().location
         
-        // Cambiar a modo ejecución temporalmente
-        isMarkdownMode = false
         
-        // Encontrar el bloque de código que contiene el cursor
         guard let block = codeBlocks.first(where: { $0.range.contains(cursorPosition) }) else {
-            // Si no hay bloque, mostrar mensaje
             output.textStorage?.setAttributedString(NSAttributedString(string: "❌ Coloca el cursor dentro de un bloque de código Swift\n\n", attributes: [
                 .foregroundColor: NSColor.systemOrange,
                 .font: NSFont.boldSystemFont(ofSize: 12)
@@ -265,7 +217,6 @@ final class ViewController: NSViewController {
             return
         }
         
-        // Limpiar output y ejecutar
         output.textStorage?.mutableString.setString("")
         output.textStorage?.append(NSAttributedString(string: "🚀 Ejecutando código...\n\n", attributes: [
             .foregroundColor: NSColor.systemGreen,
@@ -279,45 +230,5 @@ final class ViewController: NSViewController {
         if let t = observerToken {
             NotificationCenter.default.removeObserver(t)
         }
-    }
-}
-
-// MARK: - Toolbar Delegate
-extension ViewController: NSToolbarDelegate {
-    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
-        
-        switch itemIdentifier {
-        case NSToolbarItem.Identifier("toggleMode"):
-            let item = NSToolbarItem(itemIdentifier: itemIdentifier)
-            let button = NSButton()
-            button.title = isMarkdownMode ? "Vista Código" : "Vista Markdown"
-            button.target = self
-            button.action = #selector(toggleMode)
-            item.view = button
-            item.label = "Cambiar Vista"
-            return item
-        default:
-            return nil
-        }
-    }
-    
-    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [NSToolbarItem.Identifier("toggleMode")]
-    }
-    
-    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
-        return [NSToolbarItem.Identifier("toggleMode")]
-    }
-}
-
-// MARK: - NSColor Extension para CSS
-extension NSColor {
-    var cssColor: String {
-        let components = self.usingColorSpace(.deviceRGB)?.cgColor.components ?? [0, 0, 0, 1]
-        let r = Int(components[0] * 255)
-        let g = Int(components[1] * 255)
-        let b = Int(components[2] * 255)
-        let a = components.count > 3 ? components[3] : 1.0
-        return "rgba(\(r), \(g), \(b), \(a))"
     }
 }

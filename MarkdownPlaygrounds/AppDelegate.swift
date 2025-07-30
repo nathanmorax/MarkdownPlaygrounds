@@ -6,7 +6,6 @@
 //
 
 import Cocoa
-import Ink
 
 @main
 class AppDelegate: NSObject, NSApplicationDelegate {
