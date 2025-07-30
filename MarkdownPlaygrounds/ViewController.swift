@@ -66,45 +66,8 @@ final class ViewController: NSViewController {
         // Contenido inicial de ejemplo
         editor.string = """
         # Mi Playground Swift + Markdown
-        
-        Este es un editor que combina **Markdown** con *Swift*.
-        
-        ## Características:
-        - Syntax highlighting para Markdown
-        - Ejecución de código Swift
-        - Vista previa renderizada
-        
-        ### Código Swift ejecutable:
-        
-        ```swift
-        let saludo = "¡Hola mundo!"
-        print(saludo)
-        
-        for i in 1...5 {
-            print("Número: \\(i)")
-        }
-        ```
-        
-        > **Tip**: Usa Cmd+R para ejecutar el código Swift
-        
-        ### Más ejemplos:
-        
-        ```swift
-        import Foundation
-        
-        let fecha = Date()
-        print("Fecha actual: \\(fecha)")
-        
-        let numeros = [1, 2, 3, 4, 5]
-        let duplicados = numeros.map { $0 * 2 }
-        print("Duplicados: \\(duplicados)")
-        ```
-        
-        ---
-        
-        **¡Disfruta programando!** 🚀
+        ## ¡Disfruta programando! 🚀
         """
-        
         parse()
     }
     
@@ -157,21 +120,6 @@ final class ViewController: NSViewController {
         
         
     }
-
-    
-    private func renderMarkdownInOutput(_ markdown: String) {
-        // Usar Ink para convertir markdown a HTML
-        let html = markdownParser.html(from: markdown)
-        
-        // Envolver el HTML con CSS personalizado
-        let styledHTML = wrapHTMLWithCSS(html)
-        
-        // Convertir HTML a NSAttributedString
-        let attributedString = attributedString(from: styledHTML)
-        
-        // Mostrar en el output
-        editor.textStorage?.setAttributedString(attributedString)
-    }
     
     func applyHighlighting() {
         guard let textStorage = editor.textStorage else { return }
@@ -187,106 +135,6 @@ final class ViewController: NSViewController {
         
         parse()
 
-    }
-
-    
-    private func wrapHTMLWithCSS(_ html: String) -> String {
-        return """
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <style>
-                body {
-                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                    line-height: 1.6;
-                    color: \(NSColor.labelColor.cssColor);
-                    background-color: \(NSColor.controlBackgroundColor.cssColor);
-                    margin: 0;
-                    padding: 20px;
-                }
-                h1, h2, h3, h4, h5, h6 { 
-                    color: \(NSColor.red.cssColor);
-                    font-weight: bold;
-                }
-                h1 { font-size: 2em; border-bottom: 2px solid \(NSColor.separatorColor.cssColor); padding-bottom: 10px; }
-                h2 { font-size: 1.5em; border-bottom: 1px solid \(NSColor.separatorColor.cssColor); padding-bottom: 5px; }
-                h3 { font-size: 1.2em; }
-                
-                code {
-                    background-color: \(NSColor.controlColor.cssColor);
-                    color: \(NSColor.controlAccentColor.cssColor);
-                    padding: 2px 6px;
-                    border-radius: 4px;
-                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
-                    font-size: 0.9em;
-                }
-                
-                pre {
-                    background-color: \(NSColor.controlColor.cssColor);
-                    border: 1px solid \(NSColor.separatorColor.cssColor);
-                    border-radius: 6px;
-                    padding: 16px;
-                    overflow-x: auto;
-                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
-                    font-size: 0.9em;
-                }
-                
-                pre code {
-                    background: none;
-                    padding: 0;
-                    border-radius: 0;
-                    color: \(NSColor.textColor.cssColor);
-                }
-                
-                blockquote {
-                    border-left: 4px solid \(NSColor.controlAccentColor.cssColor);
-                    margin: 16px 0;
-                    padding-left: 20px;
-                    color: \(NSColor.secondaryLabelColor.cssColor);
-                    font-style: italic;
-                }
-                
-                ul, ol {
-                    padding-left: 30px;
-                }
-                
-                li {
-                    margin: 5px 0;
-                }
-                
-                strong {
-                    color: \(NSColor.labelColor.cssColor);
-                    font-weight: bold;
-                }
-                
-                em {
-                    color: \(NSColor.secondaryLabelColor.cssColor);
-                    font-style: italic;
-                }
-                
-                hr {
-                    border: none;
-                    height: 2px;
-                    background-color: \(NSColor.separatorColor.cssColor);
-                    margin: 20px 0;
-                }
-                
-                a {
-                    color: \(NSColor.linkColor.cssColor);
-                    text-decoration: none;
-                }
-                
-                a:hover {
-                    text-decoration: underline;
-                }
-            </style>
-        </head>
-        <body>
-            \(html)
-        </body>
-        </html>
-        """
     }
     
     
