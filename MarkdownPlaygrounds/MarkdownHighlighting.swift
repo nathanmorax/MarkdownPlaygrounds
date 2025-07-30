@@ -9,85 +9,51 @@
 import AppKit
 
 extension NSMutableAttributedString {
-    func highlightMarkdownHeaders() {
-        let text = self.string
-        let lines = text.components(separatedBy: .newlines)
-        var currentIndex = 0
-        
+    func applyBasicMarkdown(to textStorage: NSMutableAttributedString) {
+        let fullText = textStorage.string as NSString
+        let lines = fullText.components(separatedBy: .newlines)
+        var location = 0
+
         for line in lines {
-            let lineLength = line.count
-            
-            if line.hasPrefix("#") {
-                let headerLevel = line.prefix(while: { $0 == "#" }).count
-                let fontSize: CGFloat = max(18, 28 - CGFloat(headerLevel * 2))
-                
-                if let rangeOfHashes = line.range(of: "^#+", options: .regularExpression) {
-                    let prefixLength = line.distance(from: line.startIndex, to: rangeOfHashes.upperBound)
-                    let styledTextStart = currentIndex + prefixLength + 1 
-                    let styledTextLength = lineLength - prefixLength - 1
-                    
-                    if styledTextLength > 0 {
-                        let styledRange = NSRange(location: styledTextStart, length: styledTextLength)
-                        self.addAttributes([
-                            .font: NSFont.boldSystemFont(ofSize: fontSize),
-                            .foregroundColor: NSColor.white
-                        ], range: styledRange)
-                    }
-                    
-                    let prefixRange = NSRange(location: currentIndex, length: prefixLength)
-                    self.addAttributes([
-                        .font: NSFont.systemFont(ofSize: fontSize - 4),
-                        .foregroundColor: NSColor.gray
-                    ], range: prefixRange)
+            let length = line.count
+            let range = NSRange(location: location, length: length)
+
+            // Detectar encabezados del H1 al H6
+            if let headingMatch = line.range(of: #"^(#{1,6})\s"#, options: .regularExpression) {
+                let hashes = line[headingMatch].trimmingCharacters(in: .whitespaces)
+                let level = hashes.count
+                let fontSize: CGFloat
+
+                switch level {
+                    case 1: fontSize = 28
+                    case 2: fontSize = 24
+                    case 3: fontSize = 20
+                    case 4: fontSize = 18
+                    case 5: fontSize = 16
+                    case 6: fontSize = 14
+                    default: fontSize = 12
                 }
-            }
-            
-            currentIndex += lineLength + 1 // +1 for \n
-        }
-    }
-    
-    func highlightMarkdownLists() {
-        let text = self.string
-        let lines = text.components(separatedBy: .newlines)
-        var currentIndex = 0
 
-        for line in lines {
-            let lineLength = line.count
-            let trimmedLine = line.trimmingCharacters(in: .whitespaces)
+                textStorage.addAttributes([
+                    .font: NSFont.boldSystemFont(ofSize: fontSize),
+                    .foregroundColor: NSColor.systemBlue
+                ], range: range)
 
-            if trimmedLine.hasPrefix("- ") || trimmedLine.hasPrefix("* ") || trimmedLine.hasPrefix("+ ") {
-                // Rango de toda la línea
-                let lineRange = NSRange(location: currentIndex, length: lineLength)
-
-                // Crear estilo de párrafo con sangría
+            } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
+                // Lista
                 let paragraphStyle = NSMutableParagraphStyle()
-                paragraphStyle.headIndent = 20  // sangría para el texto después del bullet
-                paragraphStyle.firstLineHeadIndent = 0
-                paragraphStyle.paragraphSpacing = 4
+                paragraphStyle.headIndent = 20
+                paragraphStyle.firstLineHeadIndent = 20
 
-                // Estilo para el bullet (el signo - * +)
-                let bulletRange = NSRange(location: currentIndex, length: 2)
-                self.addAttributes([
-                    .foregroundColor: NSColor.systemBlue,
-                    .font: NSFont.boldSystemFont(ofSize: 14)
-                ], range: bulletRange)
-
-                // Estilo para el texto del ítem con indentación
-                let textRange = NSRange(location: currentIndex, length: lineLength)
-                self.addAttributes([
+                textStorage.addAttributes([
                     .paragraphStyle: paragraphStyle,
-                    .foregroundColor: NSColor.labelColor,
-                    .font: NSFont.systemFont(ofSize: 14)
-                ], range: textRange)
+                    .foregroundColor: NSColor.systemGreen
+                ], range: range)
             }
 
-            currentIndex += lineLength + 1 // +1 por el salto de línea
+            location += length + 1
         }
     }
-
 }
-
-
-
 
 

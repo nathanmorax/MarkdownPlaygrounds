@@ -15,6 +15,9 @@ final class ViewController: NSViewController {
     var repl: REPL!
     private var markdownParser = MarkdownParser()
     
+    // Nueva propiedad para controlar el modo de vista
+    private var isMarkdownMode = true
+    
     override func loadView() {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 20, height: 15))
         let outputSV = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 15, height: 15))
@@ -32,6 +35,7 @@ final class ViewController: NSViewController {
         super.viewDidLoad()
         
         setupMarkdownParser()
+        setupToolbar()
         
         repl = REPL(onStdOut: { [weak self] text in
             DispatchQueue.main.async {
@@ -59,12 +63,67 @@ final class ViewController: NSViewController {
             self?.parse()
         }
         
+        // Contenido inicial de ejemplo
+        editor.string = """
+        # Mi Playground Swift + Markdown
+        
+        Este es un editor que combina **Markdown** con *Swift*.
+        
+        ## Características:
+        - Syntax highlighting para Markdown
+        - Ejecución de código Swift
+        - Vista previa renderizada
+        
+        ### Código Swift ejecutable:
+        
+        ```swift
+        let saludo = "¡Hola mundo!"
+        print(saludo)
+        
+        for i in 1...5 {
+            print("Número: \\(i)")
+        }
+        ```
+        
+        > **Tip**: Usa Cmd+R para ejecutar el código Swift
+        
+        ### Más ejemplos:
+        
+        ```swift
+        import Foundation
+        
+        let fecha = Date()
+        print("Fecha actual: \\(fecha)")
+        
+        let numeros = [1, 2, 3, 4, 5]
+        let duplicados = numeros.map { $0 * 2 }
+        print("Duplicados: \\(duplicados)")
+        ```
+        
+        ---
+        
+        **¡Disfruta programando!** 🚀
+        """
+        
         parse()
+    }
+    
+    private func setupToolbar() {
+        guard let window = view.window else { return }
+        
+        let toolbar = NSToolbar(identifier: "MarkdownToolbar")
+        toolbar.delegate = self
+        toolbar.allowsUserCustomization = false
+        window.toolbar = toolbar
     }
     
     override func keyDown(with event: NSEvent) {
         if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "r" {
             execute()
+            return
+        }
+        if event.modifierFlags.contains(.command) && event.charactersIgnoringModifiers == "m" {
+            toggleMode()
             return
         }
         super.keyDown(with: event)
@@ -82,16 +141,154 @@ final class ViewController: NSViewController {
         print("Bloque de código encontrado: \(markdown)")
     }
     
+    @objc func toggleMode() {
+        isMarkdownMode.toggle()
+        parse()
+    }
+    
     func parse() {
         guard let textStorage = editor.textStorage else { return }
         
         let markdownText = textStorage.string
         codeBlocks = extractCodeBlocks(from: markdownText)
         
-        // Aplicar highlighting
+        // Aplicar highlighting al editor
         highlightMarkdown(in: textStorage, with: codeBlocks)
         
+        
     }
+
+    
+    private func renderMarkdownInOutput(_ markdown: String) {
+        // Usar Ink para convertir markdown a HTML
+        let html = markdownParser.html(from: markdown)
+        
+        // Envolver el HTML con CSS personalizado
+        let styledHTML = wrapHTMLWithCSS(html)
+        
+        // Convertir HTML a NSAttributedString
+        let attributedString = attributedString(from: styledHTML)
+        
+        // Mostrar en el output
+        editor.textStorage?.setAttributedString(attributedString)
+    }
+    
+    func applyHighlighting() {
+        guard let textStorage = editor.textStorage else { return }
+        let mutableString = NSMutableAttributedString(attributedString: textStorage)
+        
+        // Extraemos bloques y aplicamos estilos con highlightMarkdown
+        codeBlocks = extractCodeBlocks(from: mutableString.string)
+        highlightMarkdown(in: mutableString, with: codeBlocks)
+        
+        let selectedRange = editor.selectedRange()
+        textStorage.setAttributedString(mutableString)
+        editor.setSelectedRange(selectedRange)
+        
+        parse()
+
+    }
+
+    
+    private func wrapHTMLWithCSS(_ html: String) -> String {
+        return """
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                    line-height: 1.6;
+                    color: \(NSColor.labelColor.cssColor);
+                    background-color: \(NSColor.controlBackgroundColor.cssColor);
+                    margin: 0;
+                    padding: 20px;
+                }
+                h1, h2, h3, h4, h5, h6 { 
+                    color: \(NSColor.red.cssColor);
+                    font-weight: bold;
+                }
+                h1 { font-size: 2em; border-bottom: 2px solid \(NSColor.separatorColor.cssColor); padding-bottom: 10px; }
+                h2 { font-size: 1.5em; border-bottom: 1px solid \(NSColor.separatorColor.cssColor); padding-bottom: 5px; }
+                h3 { font-size: 1.2em; }
+                
+                code {
+                    background-color: \(NSColor.controlColor.cssColor);
+                    color: \(NSColor.controlAccentColor.cssColor);
+                    padding: 2px 6px;
+                    border-radius: 4px;
+                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+                    font-size: 0.9em;
+                }
+                
+                pre {
+                    background-color: \(NSColor.controlColor.cssColor);
+                    border: 1px solid \(NSColor.separatorColor.cssColor);
+                    border-radius: 6px;
+                    padding: 16px;
+                    overflow-x: auto;
+                    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Mono', monospace;
+                    font-size: 0.9em;
+                }
+                
+                pre code {
+                    background: none;
+                    padding: 0;
+                    border-radius: 0;
+                    color: \(NSColor.textColor.cssColor);
+                }
+                
+                blockquote {
+                    border-left: 4px solid \(NSColor.controlAccentColor.cssColor);
+                    margin: 16px 0;
+                    padding-left: 20px;
+                    color: \(NSColor.secondaryLabelColor.cssColor);
+                    font-style: italic;
+                }
+                
+                ul, ol {
+                    padding-left: 30px;
+                }
+                
+                li {
+                    margin: 5px 0;
+                }
+                
+                strong {
+                    color: \(NSColor.labelColor.cssColor);
+                    font-weight: bold;
+                }
+                
+                em {
+                    color: \(NSColor.secondaryLabelColor.cssColor);
+                    font-style: italic;
+                }
+                
+                hr {
+                    border: none;
+                    height: 2px;
+                    background-color: \(NSColor.separatorColor.cssColor);
+                    margin: 20px 0;
+                }
+                
+                a {
+                    color: \(NSColor.linkColor.cssColor);
+                    text-decoration: none;
+                }
+                
+                a:hover {
+                    text-decoration: underline;
+                }
+            </style>
+        </head>
+        <body>
+            \(html)
+        </body>
+        </html>
+        """
+    }
+    
     
     private func extractCodeBlocks(from markdown: String) -> [CodeBlock] {
         var blocks: [CodeBlock] = []
@@ -166,6 +363,7 @@ final class ViewController: NSViewController {
     private func highlightMarkdown(in textStorage: NSMutableAttributedString, with codeBlocks: [CodeBlock]) {
         let fullRange = NSRange(location: 0, length: textStorage.length)
         
+        
         // Aplicar estilo base
         textStorage.addAttributes([
             .foregroundColor: NSColor.labelColor,
@@ -173,46 +371,46 @@ final class ViewController: NSViewController {
             .backgroundColor: NSColor.clear
         ], range: fullRange)
         
-        textStorage.highlightMarkdownLists()
-
         
-        // Heading
-        textStorage.highlightMarkdownHeaders()
+        textStorage.applyBasicMarkdown(to: textStorage)
         
-
         // Highlight para bloques de código
         for block in codeBlocks {
             guard block.range.location + block.range.length <= textStorage.length else { continue }
             
             textStorage.addAttributes([
-                .backgroundColor: NSColor.gray,
-                .foregroundColor: NSColor.white,
+                .backgroundColor: NSColor.controlColor,
+                .foregroundColor: NSColor.controlAccentColor,
                 .font: NSFont.monospacedSystemFont(ofSize: 14, weight: .medium)
             ], range: block.range)
         }
-    
     }
     
-
     func attributedString(from html: String) -> NSAttributedString {
         guard let data = html.data(using: .utf8) else { return NSAttributedString() }
-
+        
         let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
             .documentType: NSAttributedString.DocumentType.html,
             .characterEncoding: String.Encoding.utf8.rawValue
         ]
-
-        return try! NSAttributedString(data: data, options: options, documentAttributes: nil)
+        
+        do {
+            return try NSAttributedString(data: data, options: options, documentAttributes: nil)
+        } catch {
+            return NSAttributedString(string: "Error al renderizar HTML: \(error.localizedDescription)")
+        }
     }
-
     
     @objc func execute() {
         let cursorPosition = editor.selectedRange().location
         
+        // Cambiar a modo ejecución temporalmente
+        isMarkdownMode = false
+        
         // Encontrar el bloque de código que contiene el cursor
         guard let block = codeBlocks.first(where: { $0.range.contains(cursorPosition) }) else {
             // Si no hay bloque, mostrar mensaje
-            output.textStorage?.append(NSAttributedString(string: "❌ Coloca el cursor dentro de un bloque de código Swift\n\n", attributes: [
+            output.textStorage?.setAttributedString(NSAttributedString(string: "❌ Coloca el cursor dentro de un bloque de código Swift\n\n", attributes: [
                 .foregroundColor: NSColor.systemOrange,
                 .font: NSFont.boldSystemFont(ofSize: 12)
             ]))
@@ -233,5 +431,45 @@ final class ViewController: NSViewController {
         if let t = observerToken {
             NotificationCenter.default.removeObserver(t)
         }
+    }
+}
+
+// MARK: - Toolbar Delegate
+extension ViewController: NSToolbarDelegate {
+    func toolbar(_ toolbar: NSToolbar, itemForItemIdentifier itemIdentifier: NSToolbarItem.Identifier, willBeInsertedIntoToolbar flag: Bool) -> NSToolbarItem? {
+        
+        switch itemIdentifier {
+        case NSToolbarItem.Identifier("toggleMode"):
+            let item = NSToolbarItem(itemIdentifier: itemIdentifier)
+            let button = NSButton()
+            button.title = isMarkdownMode ? "Vista Código" : "Vista Markdown"
+            button.target = self
+            button.action = #selector(toggleMode)
+            item.view = button
+            item.label = "Cambiar Vista"
+            return item
+        default:
+            return nil
+        }
+    }
+    
+    func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [NSToolbarItem.Identifier("toggleMode")]
+    }
+    
+    func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        return [NSToolbarItem.Identifier("toggleMode")]
+    }
+}
+
+// MARK: - NSColor Extension para CSS
+extension NSColor {
+    var cssColor: String {
+        let components = self.usingColorSpace(.deviceRGB)?.cgColor.components ?? [0, 0, 0, 1]
+        let r = Int(components[0] * 255)
+        let g = Int(components[1] * 255)
+        let b = Int(components[2] * 255)
+        let a = components.count > 3 ? components[3] : 1.0
+        return "rgba(\(r), \(g), \(b), \(a))"
     }
 }
