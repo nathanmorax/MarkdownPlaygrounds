@@ -13,45 +13,48 @@ extension NSMutableAttributedString {
         let fullText = textStorage.string as NSString
         let lines = fullText.components(separatedBy: .newlines)
         var location = 0
-
+        
         for line in lines {
             let length = line.count
             let range = NSRange(location: location, length: length)
-
+            
             // Detectar encabezados del H1 al H6
             if let headingMatch = line.range(of: #"^(#{1,6})\s"#, options: .regularExpression) {
                 let hashes = line[headingMatch].trimmingCharacters(in: .whitespaces)
                 let level = hashes.count
                 let fontSize: CGFloat
-
+                
                 switch level {
-                    case 1: fontSize = 28
-                    case 2: fontSize = 24
-                    case 3: fontSize = 20
-                    case 4: fontSize = 18
-                    case 5: fontSize = 16
-                    case 6: fontSize = 14
-                    default: fontSize = 12
+                case 1: fontSize = 28
+                case 2: fontSize = 24
+                case 3: fontSize = 20
+                case 4: fontSize = 18
+                case 5: fontSize = 16
+                case 6: fontSize = 14
+                default: fontSize = 12
                 }
-
+                
                 textStorage.addAttributes([
                     .font: NSFont.boldSystemFont(ofSize: fontSize),
                     .foregroundColor: NSColor.white
                 ], range: range)
                 
-
+                
             } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
                 // Lista
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.headIndent = 20
                 paragraphStyle.firstLineHeadIndent = 20
-
+                paragraphStyle.paragraphSpacing = 4
+                
+                let newLineLength = line.count - 2 + 2
+                
                 textStorage.addAttributes([
                     .paragraphStyle: paragraphStyle,
                     .foregroundColor: NSColor.white
-                ], range: range)
+                ], range: NSRange(location: location, length: newLineLength))
             }
-
+            
             location += length + 1
         }
     }
