@@ -15,28 +15,15 @@ extension NSMutableAttributedString {
         var location = 0
 
         for line in lines {
-            var length = line.count
-            var range = NSRange(location: location, length: length)
+            let length = line.count
+            let range = NSRange(location: location, length: length)
 
-            // Detectar encabezados del H1 al H6 (uno o más # seguidos de espacio)
+            // Detectar encabezados del H1 al H6
             if let headingMatch = line.range(of: #"^(#{1,6})\s"#, options: .regularExpression) {
-                // Extraer el prefijo con hashes + espacio
-                let hashesAndSpace = line[headingMatch]
-                let level = hashesAndSpace.filter { $0 == "#" }.count
-
-                // Nuevo texto sin los hashes y espacio
-                let newLine = line.replacingOccurrences(of: hashesAndSpace, with: "")
-
-                // Remplazar el texto en textStorage con la línea sin #
-                let replaceRange = NSRange(location: location, length: length)
-                textStorage.replaceCharacters(in: replaceRange, with: newLine)
-
-                // Actualizar length y range después del reemplazo
-                length = newLine.count
-                range = NSRange(location: location, length: length)
-
-                // Definir tamaño de fuente según nivel
+                let hashes = line[headingMatch].trimmingCharacters(in: .whitespaces)
+                let level = hashes.count
                 let fontSize: CGFloat
+
                 switch level {
                     case 1: fontSize = 28
                     case 2: fontSize = 24
@@ -47,11 +34,11 @@ extension NSMutableAttributedString {
                     default: fontSize = 12
                 }
 
-                // Aplicar atributos al rango modificado
                 textStorage.addAttributes([
                     .font: NSFont.boldSystemFont(ofSize: fontSize),
                     .foregroundColor: NSColor.white
                 ], range: range)
+                
 
             } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
                 // Lista
@@ -69,3 +56,5 @@ extension NSMutableAttributedString {
         }
     }
 }
+
+
