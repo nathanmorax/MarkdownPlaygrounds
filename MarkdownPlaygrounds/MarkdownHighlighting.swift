@@ -1,5 +1,5 @@
 //
-//  CodeBlock.swift
+//  MarkdownHighlighting.swift
 //  MarkdownPlaygrounds
 //
 //  Created by Jonathan Mora on 22/07/25.
@@ -41,20 +41,24 @@ extension NSMutableAttributedString {
                 
                 
             } else if line.hasPrefix("- ") || line.hasPrefix("* ") {
-                // Lista
+                // Cambiar solo el símbolo visual
+                let symbolRange = NSRange(location: location, length: 2)
+                textStorage.replaceCharacters(in: symbolRange, with: "• ")
+
+                // Estilo de párrafo para formateo de listas
                 let paragraphStyle = NSMutableParagraphStyle()
                 paragraphStyle.headIndent = 20
                 paragraphStyle.firstLineHeadIndent = 20
                 paragraphStyle.paragraphSpacing = 4
-                
-                let newLineLength = line.count - 2 + 2
-                
+
+                let adjustedLength = line.count - 2 + 2 // nueva longitud tras reemplazo
+
                 textStorage.addAttributes([
                     .paragraphStyle: paragraphStyle,
                     .foregroundColor: NSColor.white
-                ], range: NSRange(location: location, length: newLineLength))
+                ], range: NSRange(location: location, length: adjustedLength))
             }
-            
+
             location += length + 1
         }
     }

@@ -57,25 +57,33 @@ final class ViewController: NSViewController {
             self?.parse()
         }
         
-        // Contenido inicial de ejemplo
-        editor.string = """
-        # Mi Playground Swift + Markdown
-        ## ¡Disfruta programando! 🚀
-        """
         parse()
     }
 
     func parse() {
         guard let textStorage = editor.textStorage else { return }
-        
-        let markdownText = textStorage.string
-        codeBlocks = extractCodeBlocks(from: markdownText)
-        
+
+        let rawText = textStorage.string
+        let fixedText = prepareMarkdownText(rawText)
+
+        //textStorage.setAttributedString(NSAttributedString(string: fixedText))
+
+        codeBlocks = extractCodeBlocks(from: fixedText)
+
         // Aplicar highlighting al editor
         highlightMarkdown(in: textStorage, with: codeBlocks)
-        
-        
     }
+    
+    private func prepareMarkdownText(_ raw: String) -> String {
+        // Inserta saltos de línea antes de cada `*` o `-` cuando están en medio del texto
+        raw.replacingOccurrences(
+            of: #"(?<=\S)\s+(\*|\-)\s"#,
+            with: "\n$1 ",
+            options: .regularExpression
+        )
+    }
+
+
     
     func applyHighlighting() {
         guard let textStorage = editor.textStorage else { return }
