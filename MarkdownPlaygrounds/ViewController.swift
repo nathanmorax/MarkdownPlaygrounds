@@ -240,3 +240,15 @@ final class ViewController: NSViewController {
         }
     }
 }
+
+
+final class RoundedTextView: NSTextView {
+    override func drawBackground(in dirtyRect: NSRect) {
+        super.drawBackground(in: dirtyRect)
+
+        let path = NSBezierPath(roundedRect: dirtyRect.insetBy(dx: 10, dy: 10), xRadius: 10, yRadius: 10)
+        NSColor.systemGreen.setFill()
+        path.fill()
+    }
+
+}

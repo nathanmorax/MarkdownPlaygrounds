@@ -11,12 +11,12 @@ import AppKit
 final class MarkdownHighlighter {
     
     // MARK: - Constants
-    private struct Style {
+     struct Style {
         static let headerSizes: [Int: CGFloat] = [1: 28, 2: 24, 3: 20, 4: 18, 5: 16, 6: 14]
         static let textColor = NSColor.white
         static let highlightColor = NSColor.systemGreen
         static let defaultFont = NSFont.systemFont(ofSize: 14)
-        static let listIndent: CGFloat = 20
+        static let listIndent: CGFloat = 15
     }
     
     // MARK: - Public Methods
@@ -30,6 +30,7 @@ final class MarkdownHighlighter {
             applyHighlight(line: line, textStorage: textStorage, location: location)
             applyHeading(line: line, textStorage: textStorage, range: range)
             applyBulletList(line: line, textStorage: textStorage, range: range, location: location)
+            applyBold(line: line, textStorage: textStorage, location: location)
             
             location += line.count + 1
         }
@@ -82,6 +83,22 @@ final class MarkdownHighlighter {
             .foregroundColor: Style.textColor,
             .font: Style.defaultFont
         ], range: range)
+    }
+    
+    private func applyBold(line: String, textStorage: NSMutableAttributedString, location: Int) {
+        guard let match = line.range(of: "--(.+?)--", options: .regularExpression) else { return }
+
+        let nsRange = NSRange(match, in: line)
+        let highlightRange = NSRange(
+            location: location + nsRange.location + 2,
+            length: nsRange.length - 4
+        )
+        
+        textStorage.addAttributes([
+            .font: NSFont.boldSystemFont(ofSize: 17),
+            .foregroundColor: NSColor.white,
+            .backgroundColor: NSColor.clear
+        ], range: highlightRange)
     }
 }
 
