@@ -31,6 +31,7 @@ final class MarkdownHighlighter {
             applyHeading(line: line, textStorage: textStorage, range: range)
             applyBulletList(line: line, textStorage: textStorage, range: range, location: location)
             applyBold(line: line, textStorage: textStorage, location: location)
+            applyItalic(line: line, textStorage: textStorage, location: location)
             
             location += line.count + 1
         }
@@ -96,9 +97,28 @@ final class MarkdownHighlighter {
         
         textStorage.addAttributes([
             .font: NSFont.boldSystemFont(ofSize: 17),
-            .foregroundColor: NSColor.white,
-            .backgroundColor: NSColor.clear
+            .foregroundColor: NSColor.textColor,
         ], range: highlightRange)
+    }
+    
+    private func applyItalic(line: String, textStorage: NSMutableAttributedString, location: Int) {
+        guard let match = line.range(of: "//(.+?)//", options: .regularExpression) else { return }
+        
+        let nsRange = NSRange(match, in: line)
+        let highlightRange = NSRange(
+            location: location + nsRange.location + 2,
+            length:  nsRange.length - 4
+        )
+        
+        let font = Style.defaultFont
+        let italicDescriptor = font.fontDescriptor.withSymbolicTraits(.italic)
+        let italicFont = NSFont(descriptor: italicDescriptor, size: 14)
+
+        textStorage.addAttributes([
+            .font: italicFont,
+            .foregroundColor: Style.textColor,
+        ], range: highlightRange)
+            
     }
 }
 
