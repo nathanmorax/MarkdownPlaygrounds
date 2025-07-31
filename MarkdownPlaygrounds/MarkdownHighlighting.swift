@@ -32,6 +32,7 @@ final class MarkdownHighlighter {
             applyBulletList(line: line, textStorage: textStorage, range: range, location: location)
             applyBold(line: line, textStorage: textStorage, location: location)
             applyItalic(line: line, textStorage: textStorage, location: location)
+            applyUnderline(line: line, textStorage: textStorage, location: location)
             
             location += line.count + 1
         }
@@ -96,7 +97,7 @@ final class MarkdownHighlighter {
         )
         
         textStorage.addAttributes([
-            .font: NSFont.boldSystemFont(ofSize: 17),
+            .font: NSFont.boldSystemFont(ofSize: 16),
             .foregroundColor: NSColor.textColor,
         ], range: highlightRange)
     }
@@ -118,7 +119,21 @@ final class MarkdownHighlighter {
             .font: italicFont,
             .foregroundColor: Style.textColor,
         ], range: highlightRange)
-            
+    }
+    
+    private func applyUnderline(line: String, textStorage: NSMutableAttributedString, location: Int) {
+        guard let match = line.range(of: "__(.+?)__", options: .regularExpression) else { return }
+        
+        let nsRange = NSRange(match, in: line)
+        let highlightRange = NSRange(
+            location: location + nsRange.location + 2,
+            length: nsRange.length - 4
+        )
+        
+        textStorage.addAttributes([
+            .font: Style.defaultFont,
+            .underlineStyle: NSUnderlineStyle.single.rawValue,
+        ], range: highlightRange)
     }
 }
 
