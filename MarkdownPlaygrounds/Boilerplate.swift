@@ -15,7 +15,6 @@ struct CodeBlock {
 }
 
 class Boilerplate {
-
     
     func splitView(_ views: [NSView]) -> NSSplitView {
         let sv = NSSplitView()
@@ -32,7 +31,6 @@ class Boilerplate {
     }
     
 }
-
 
 extension NSTextView {
     func configureAndWrapInScrollView(isEditable editable: Bool, inset: CGSize) -> NSScrollView {
@@ -126,16 +124,3 @@ extension NSApplication {
         return mainMenu
     }
 }
-
-
-let accentColors: [NSColor] = [
-    // From: https://ethanschoonover.com/solarized/#the-values
-    (181, 137,   0),
-    (203,  75,  22),
-    (220,  50,  47),
-    (211,  54, 130),
-    (108, 113, 196),
-    ( 38, 139, 210),
-    ( 42, 161, 152),
-    (133, 153,   0)
-    ].map { NSColor(calibratedRed: CGFloat($0.0) / 255, green: CGFloat($0.1) / 255, blue: CGFloat($0.2) / 255, alpha: 1)}
