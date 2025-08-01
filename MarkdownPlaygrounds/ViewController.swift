@@ -6,6 +6,7 @@
 //
 import Cocoa
 
+
 final class ViewController: NSViewController {
     let editor = NSTextView()
     let output = NSTextView()
@@ -13,6 +14,9 @@ final class ViewController: NSViewController {
     var codeBlocks: [CodeBlock] = []
     var repl: REPL!
     
+    // Sistema de parsing incremental para mejor performance
+    private let incrementalParser = IncrementalMarkdownParser()
+    private var isUpdatingText = false // Evitar loops infinitos
     
     override func loadView() {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 20, height: 15))
@@ -24,13 +28,50 @@ final class ViewController: NSViewController {
         editor.backgroundColor = NSColor.controlBackgroundColor
         output.backgroundColor = NSColor.controlBackgroundColor
         
+        // Mejorar la experiencia de escritura
+        editor.isAutomaticQuoteSubstitutionEnabled = false
+        editor.isAutomaticDashSubstitutionEnabled = false
+        editor.isAutomaticTextReplacementEnabled = false
+        
         self.view = Boilerplate().splitView([editorSV, outputSV])
     }
     
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        setupREPL()
+        setupTextChangeObserver()
         
+        // Contenido inicial para demostrar el rendering
+        let initialContent = """
+        # Mi Markdown Playground
+
+        Este es un **texto en negrita** y este está en *cursiva*.
+
+        ## Lista de tareas
+        - Primera tarea
+        - Segunda tarea con `código inline`
+        - Tercera tarea
+
+        > Esta es una cita importante
+        > que se extiende por varias líneas.
+
+        ### Ejemplo de código Swift
+
+        ```swift
+        print("¡Hola mundo!")
+        let numero = 42
+        print("El número es: \\(numero)")
+        ```
+
+        Más texto después del código...
+        """
+        
+        editor.string = initialContent
+        parse()
+    }
+    
+    private func setupREPL() {
         repl = REPL(onStdOut: { [weak self] text in
             DispatchQueue.main.async {
                 self?.output.textStorage?.append(NSAttributedString(string: text, attributes: [
@@ -48,60 +89,64 @@ final class ViewController: NSViewController {
                 self?.output.scrollToEndOfDocument(nil)
             }
         })
-        
+    }
+    
+    private func setupTextChangeObserver() {
         observerToken = NotificationCenter.default.addObserver(
             forName: NSTextView.didChangeNotification,
             object: editor,
             queue: nil
         ) { [weak self] _ in
-            self?.parse()
+            // Pequeño delay para evitar demasiadas actualizaciones
+            DispatchQueue.main.async {
+                self?.parse()
+            }
         }
-        
-        parse()
     }
 
+    // MARK: - Parsing y Rendering Principal
     func parse() {
-        guard let textStorage = editor.textStorage else { return }
-
-        let rawText = textStorage.string
-        let fixedText = prepareMarkdownText(rawText)
-
-        //textStorage.setAttributedString(NSAttributedString(string: fixedText))
-
-        codeBlocks = extractCodeBlocks(from: fixedText)
-
-        // Aplicar highlighting al editor
-        highlightMarkdown(in: textStorage, with: codeBlocks)
-    }
-    
-    private func prepareMarkdownText(_ raw: String) -> String {
-        // Inserta saltos de línea antes de cada `*` o `-` cuando están en medio del texto
-        raw.replacingOccurrences(
-            of: #"(?<=\S)\s+(\*|\-)\s"#,
-            with: "\n$1 ",
-            options: .regularExpression
-        )
-    }
-
-
-    
-    func applyHighlighting() {
-        guard let textStorage = editor.textStorage else { return }
-        let mutableString = NSMutableAttributedString(attributedString: textStorage)
         
-        // Extraemos bloques y aplicamos estilos con highlightMarkdown
-        codeBlocks = extractCodeBlocks(from: mutableString.string)
-        highlightMarkdown(in: mutableString, with: codeBlocks)
+        guard let textStorage = editor.textStorage,
+              !isUpdatingText else { return }
         
+        isUpdatingText = true
+        defer { isUpdatingText = false }
+        
+        let currentText = textStorage.string
         let selectedRange = editor.selectedRange()
-        textStorage.setAttributedString(mutableString)
-        editor.setSelectedRange(selectedRange)
         
-        parse()
-
+        // Usar el parser incremental para mejor performance
+        let elements = incrementalParser.parseIfNeeded(currentText)
+        
+        // Crear una copia mutable para aplicar estilos
+        let mutableString = NSMutableAttributedString(string: currentText)
+        mutableString.applyMarkdownStyling(elements: elements)
+        
+        // Actualizar el textStorage preservando la selección
+        textStorage.setAttributedString(mutableString)
+        
+        // Restaurar la posición del cursor de manera segura
+        let safeRange = NSRange(
+            location: min(selectedRange.location, textStorage.length),
+            length: min(selectedRange.length, textStorage.length - min(selectedRange.location, textStorage.length))
+        )
+        editor.setSelectedRange(safeRange)
+        
+        // Actualizar code blocks para ejecución
+        updateCodeBlocks(from: elements)
     }
     
+    private func updateCodeBlocks(from elements: [MarkdownParser.MarkdownElement]) {
+        codeBlocks = elements.compactMap { element in
+            if case .codeBlock = element.type {
+                return CodeBlock(text: element.content, range: element.range)
+            }
+            return nil
+        }
+    }
     
+    // MARK: - Métodos legacy (mantenidos para compatibilidad)
     private func extractCodeBlocks(from markdown: String) -> [CodeBlock] {
         var blocks: [CodeBlock] = []
         let text = markdown as NSString
@@ -172,50 +217,9 @@ final class ViewController: NSViewController {
         return NSRange(location: startOffset, length: length)
     }
     
-    private func highlightMarkdown(in textStorage: NSMutableAttributedString, with codeBlocks: [CodeBlock]) {
-        let fullRange = NSRange(location: 0, length: textStorage.length)
-        
-        
-        // Aplicar estilo base
-        textStorage.addAttributes([
-            .foregroundColor: NSColor.labelColor,
-            .font: NSFont.systemFont(ofSize: 14),
-            .backgroundColor: NSColor.clear
-        ], range: fullRange)
-        
-        
-        textStorage.applyBasicMarkdown(to: textStorage)
-        
-        // Highlight para bloques de código
-        for block in codeBlocks {
-            guard block.range.location + block.range.length <= textStorage.length else { continue }
-            
-            textStorage.addAttributes([
-                .backgroundColor: NSColor.controlColor,
-                .foregroundColor: NSColor.controlAccentColor,
-                .font: NSFont.monospacedSystemFont(ofSize: 14, weight: .medium)
-            ], range: block.range)
-        }
-    }
-    
-    func attributedString(from html: String) -> NSAttributedString {
-        guard let data = html.data(using: .utf8) else { return NSAttributedString() }
-        
-        let options: [NSAttributedString.DocumentReadingOptionKey: Any] = [
-            .documentType: NSAttributedString.DocumentType.html,
-            .characterEncoding: String.Encoding.utf8.rawValue
-        ]
-        
-        do {
-            return try NSAttributedString(data: data, options: options, documentAttributes: nil)
-        } catch {
-            return NSAttributedString(string: "Error al renderizar HTML: \(error.localizedDescription)")
-        }
-    }
-    
+    // MARK: - Ejecución de código
     @objc func execute() {
         let cursorPosition = editor.selectedRange().location
-        
         
         guard let block = codeBlocks.first(where: { $0.range.contains(cursorPosition) }) else {
             output.textStorage?.setAttributedString(NSAttributedString(string: "❌ Coloca el cursor dentro de un bloque de código Swift\n\n", attributes: [
@@ -239,16 +243,4 @@ final class ViewController: NSViewController {
             NotificationCenter.default.removeObserver(t)
         }
     }
-}
-
-
-final class RoundedTextView: NSTextView {
-    override func drawBackground(in dirtyRect: NSRect) {
-        super.drawBackground(in: dirtyRect)
-
-        let path = NSBezierPath(roundedRect: dirtyRect.insetBy(dx: 10, dy: 10), xRadius: 10, yRadius: 10)
-        NSColor.systemGreen.setFill()
-        path.fill()
-    }
-
 }
