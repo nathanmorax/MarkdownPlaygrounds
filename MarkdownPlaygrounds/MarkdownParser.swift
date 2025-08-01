@@ -18,6 +18,7 @@ class MarkdownParser {
             case header(Int)
             case bold
             case italic
+            case boldItalic
             case code
             case codeBlock
             case link
@@ -41,6 +42,9 @@ class MarkdownParser {
         
         elements.append(contentsOf: parseItalic(in: nsText))
         
+        // 1. Bold + Italic (***texto***) - PRIMERO, más específico
+        elements.append(contentsOf: parseBoldItalic(in: nsText))
+        
         // Inline code (`code`)
         elements.append(contentsOf: parseInlineCode(in: nsText))
         
@@ -62,7 +66,7 @@ class MarkdownParser {
     private func parseHeaders(in text: NSString) -> [MarkdownElement] {
         var elements: [MarkdownElement] = []
         let pattern = "^(#{1,6})\\s+(.+)$"
-        
+
         let regex = try! NSRegularExpression(pattern: pattern, options: [.anchorsMatchLines])
         let matches = regex.matches(in: text as String, options: [], range: NSRange(location: 0, length: text.length))
         
@@ -90,6 +94,11 @@ class MarkdownParser {
     
     private func parseItalic(in text: NSString) -> [MarkdownElement] {
         return parsePattern("(?<!\\*)\\*([^*]+?)\\*(?!\\*)", type: .italic, in: text)
+    }
+    
+    private func parseBoldItalic(in text: NSString) -> [MarkdownElement] {
+        // Buscar texto con ***texto*** (negrita Y cursiva)
+        return parsePattern("\\*\\*\\*([^*]+?)\\*\\*\\*", type: .boldItalic, in: text)
     }
     
     private func parseInlineCode(in text: NSString) -> [MarkdownElement] {

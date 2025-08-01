@@ -26,35 +26,37 @@ extension NSMutableAttributedString {
     }
     
     private func applyStyle(for element: MarkdownParser.MarkdownElement) {
-          // Validación de seguridad: verificar que el rango esté dentro de los límites
-          guard element.range.location >= 0,
-                element.range.location + element.range.length <= self.length,
-                element.range.length > 0 else {
-              print("⚠️ Rango inválido para elemento: \(element.type), rango: \(element.range), longitud del texto: \(self.length)")
-              return
-          }
-          
-          switch element.type {
-          case .header(let level):
-              applyHeaderStyle(level: level, range: element.range)
-          case .bold:
-              applyBoldStyle(range: element.range)
-          case .italic:
-              applyItalicStyle(range: element.range)
-          case .code:
-              applyInlineCodeStyle(range: element.range)
-          case .codeBlock:
-              applyCodeBlockStyle(range: element.range)
-          case .link:
-              applyLinkStyle(range: element.range)
-          case .list:
-              applyListStyle(range: element.range)
-          case .quote:
-              applyQuoteStyle(range: element.range)
-          case .strikethrough:
-              applyStrikethroughStyle(range: element.range)
-          }
-      }
+        // Validación de seguridad: verificar que el rango esté dentro de los límites
+        guard element.range.location >= 0,
+              element.range.location + element.range.length <= self.length,
+              element.range.length > 0 else {
+            print("⚠️ Rango inválido para elemento: \(element.type), rango: \(element.range), longitud del texto: \(self.length)")
+            return
+        }
+        
+        switch element.type {
+        case .header(let level):
+            applyHeaderStyle(level: level, range: element.range)
+        case .bold:
+            applyBoldStyle(range: element.range)
+        case .italic:
+            applyItalicStyle(range: element.range)
+        case .boldItalic:
+            applyBoldItalicStyle(range: element.range)
+        case .code:
+            applyInlineCodeStyle(range: element.range)
+        case .codeBlock:
+            applyCodeBlockStyle(range: element.range)
+        case .link:
+            applyLinkStyle(range: element.range)
+        case .list:
+            applyListStyle(range: element.range)
+        case .quote:
+            applyQuoteStyle(range: element.range)
+        case .strikethrough:
+            applyStrikethroughStyle(range: element.range)
+        }
+    }
     
     private func applyHeaderStyle(level: Int, range: NSRange) {
         let fontSize: CGFloat = max(24 - CGFloat(level * 2), 16)
@@ -129,6 +131,41 @@ extension NSMutableAttributedString {
         if endMarkerRange.location + endMarkerRange.length <= self.length {
             addAttributes([
                 .foregroundColor: NSColor.tertiaryLabelColor
+            ], range: endMarkerRange)
+        }
+    }
+    
+    private func applyBoldItalicStyle(range: NSRange) {
+        // Verificar que el rango sea válido
+        guard range.location + range.length <= self.length,
+              range.length >= 6 else { return } // Mínimo para ***x***
+        
+        // Ocultar los marcadores *** pero mantener el contenido
+        let contentRange = NSRange(location: range.location + 3, length: range.length - 6)
+        
+        // Verificar que el contentRange sea válido
+        guard contentRange.location + contentRange.length <= self.length else { return }
+        
+        // Aplicar ambos estilos: bold + italic
+        addAttributes([
+            .font: NSFont.systemFont(ofSize: 14).boldItalic()
+        ], range: contentRange)
+        
+        // Hacer los marcadores casi invisibles
+        let startMarkerRange = NSRange(location: range.location, length: 3)
+        let endMarkerRange = NSRange(location: range.location + range.length - 3, length: 3)
+        
+        if startMarkerRange.location + startMarkerRange.length <= self.length {
+            addAttributes([
+                .foregroundColor: NSColor.tertiaryLabelColor,
+                .font: NSFont.systemFont(ofSize: 8)
+            ], range: startMarkerRange)
+        }
+        
+        if endMarkerRange.location + endMarkerRange.length <= self.length {
+            addAttributes([
+                .foregroundColor: NSColor.tertiaryLabelColor,
+                .font: NSFont.systemFont(ofSize: 8)
             ], range: endMarkerRange)
         }
     }

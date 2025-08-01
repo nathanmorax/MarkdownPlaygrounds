@@ -11,4 +11,14 @@ extension NSFont {
         let fontDescriptor = self.fontDescriptor.withSymbolicTraits(.italic)
         return NSFont(descriptor: fontDescriptor, size: pointSize) ?? self
     }
+    
+    func bold() -> NSFont {
+        let fontDescriptor = self.fontDescriptor.withSymbolicTraits(.bold)
+        return NSFont(descriptor: fontDescriptor, size: pointSize) ?? self
+    }
+    
+    func boldItalic() -> NSFont {
+        let fontDescriptor = self.fontDescriptor.withSymbolicTraits([.bold, .italic])
+        return NSFont(descriptor: fontDescriptor, size: pointSize) ?? self
+    }
 }
