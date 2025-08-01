@@ -43,7 +43,7 @@ final class ViewController: NSViewController {
         setupTextChangeObserver()
         
         // Contenido inicial para demostrar el rendering
-        let initialContent = """
+        /*let initialContent = """
         # Mi Markdown Playground
 
         Este es un **texto en negrita** y este está en *cursiva*.
@@ -67,7 +67,7 @@ final class ViewController: NSViewController {
         Más texto después del código...
         """
         
-        editor.string = initialContent
+        editor.string = initialContent*/
         parse()
     }
     

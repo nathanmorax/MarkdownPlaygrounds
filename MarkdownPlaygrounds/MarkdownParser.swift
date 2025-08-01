@@ -67,6 +67,7 @@ class MarkdownParser {
         let matches = regex.matches(in: text as String, options: [], range: NSRange(location: 0, length: text.length))
         
         for match in matches {
+            let fullRange = match.range // Todo el match incluyendo # y texto
             let hashRange = match.range(at: 1)
             let contentRange = match.range(at: 2)
             let level = text.substring(with: hashRange).count
@@ -74,7 +75,7 @@ class MarkdownParser {
             
             elements.append(MarkdownElement(
                 type: .header(level),
-                range: match.range,
+                range: fullRange, // Usar el rango completo
                 level: level,
                 content: content
             ))
@@ -84,11 +85,11 @@ class MarkdownParser {
     }
     
     private func parseBold(in text: NSString) -> [MarkdownElement] {
-        return parsePattern("\\*\\*([^*]+)\\*\\*", type: .bold, in: text)
+        return parsePattern("\\*\\*([^*]+?)\\*\\*", type: .bold, in: text)
     }
     
     private func parseItalic(in text: NSString) -> [MarkdownElement] {
-        return parsePattern("\\*([^*]+)\\*", type: .italic, in: text)
+        return parsePattern("(?<!\\*)\\*([^*]+?)\\*(?!\\*)", type: .italic, in: text)
     }
     
     private func parseInlineCode(in text: NSString) -> [MarkdownElement] {
