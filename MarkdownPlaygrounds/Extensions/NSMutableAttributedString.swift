@@ -285,7 +285,7 @@ extension NSMutableAttributedString {
                 
                 guard bulletRange.location + bulletRange.length <= self.length else { continue }
                 
-                replaceCharacters(in: bulletRange, with: replacement)
+                //replaceCharacters(in: bulletRange, with: replacement)
                 break
             }
         }

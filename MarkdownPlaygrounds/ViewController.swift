@@ -8,7 +8,7 @@ import Cocoa
 
 
 final class ViewController: NSViewController {
-    let editor = NSTextView()
+    let editor = MarkdownTextView()
     let output = NSTextView()
     var observerToken: Any?
     var codeBlocks: [CodeBlock] = []
