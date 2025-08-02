@@ -56,7 +56,7 @@ extension NSMutableAttributedString {
         case .strikethrough:
             applyStrikethroughStyle(range: element.range)
         case .highlighted:
-            applyHighligtedStyle(range: element.range)
+            applyHighlightedAttachment()
         }
     }
     
@@ -315,10 +315,60 @@ extension NSMutableAttributedString {
         ], range: range)
     }
     
-    private func applyHighligtedStyle(range: NSRange) {
-        addAttributes([
+    func applyHighlightedAttachment() {
+        let pattern = "==(.+?)=="
+        let regex = try! NSRegularExpression(pattern: pattern)
+        let nsString = self.string as NSString
+        let matches = regex.matches(in: nsString as String, range: NSRange(location: 0, length: nsString.length))
+
+        for match in matches.reversed() {
+            let fullRange = match.range(at: 0)
+            let innerRange = match.range(at: 1)
+            let highlightedText = nsString.substring(with: innerRange)
+
+            let attachment = RoundedBackgroundTextAttachment(text: highlightedText)
+            let attributed = NSAttributedString(attachment: attachment)
+
+            self.replaceCharacters(in: fullRange, with: attributed)
+        }
+    }
+
+}
+
+final class RoundedBackgroundTextAttachment: NSTextAttachment {
+    let text: String
+    
+    init(text: String) {
+        self.text = text
+        super.init(data: nil, ofType: nil)
+        self.image = renderTextAsImage()
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+    
+    private func renderTextAsImage() -> NSImage? {
+        let attributes: [NSAttributedString.Key: Any] = [
             .foregroundColor: NSColor.labelColor,
-            .backgroundColor: NSColor.markdownHighlightedColor
-        ], range: range)
+            .font: NSFont.systemFont(ofSize: 14, weight: .regular)
+        ]
+        
+        let textSize = text.size(withAttributes: attributes)
+        let padding: CGFloat = 6
+        let size = NSSize(width: textSize.width + padding * 2, height: textSize.height + padding)
+
+        let image = NSImage(size: size)
+        image.lockFocus()
+
+        let rect = NSRect(origin: .zero, size: size)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
+        NSColor.colorHighlighted.setFill()
+        path.fill()
+
+        (text as NSString).draw(at: NSPoint(x: padding, y: padding / 2), withAttributes: attributes)
+
+        image.unlockFocus()
+        return image
     }
 }
