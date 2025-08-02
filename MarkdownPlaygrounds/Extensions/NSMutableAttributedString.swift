@@ -60,16 +60,68 @@ extension NSMutableAttributedString {
         }
     }
     
+    private func hideMarkersCompletely(range: NSRange) {
+        guard range.location + range.length <= self.length else { return }
+        
+        addAttributes([
+            .foregroundColor: NSColor.clear,           // Color transparente
+            .font: NSFont.systemFont(ofSize: 0.01),    // Tamaño mínimo
+            .kern: -1000,                              // Kern negativo para comprimir
+            .baselineOffset: -1000                     // Offset para mover fuera de vista
+        ], range: range)
+    }
+    
     private func applyHeaderStyle(level: Int, range: NSRange) {
         let fontSize: CGFloat = max(24 - CGFloat(level * 2), 16)
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.paragraphSpacing = 8
         
-        addAttributes([
-            .font: NSFont.boldSystemFont(ofSize: fontSize),
-            .foregroundColor: NSColor.markdownHeadingColor,
-            .paragraphStyle: paragraphStyle
-        ], range: range)
+        // Determinar la longitud de los marcadores # (level + posible espacio)
+        let text = self.attributedSubstring(from: range).string
+        var markerLength = level // Número de #
+        
+        // Verificar si hay un espacio después de los #
+        if text.count > level && text[text.index(text.startIndex, offsetBy: level)] == " " {
+            markerLength += 1 // Incluir el espacio
+        }
+        
+        // Verificar que tenemos suficiente texto para tener marcadores
+        guard range.length > markerLength else {
+            // Si no hay marcadores detectables, aplicar estilo a todo el rango
+            addAttributes([
+                .font: NSFont.boldSystemFont(ofSize: fontSize),
+                .foregroundColor: NSColor.markdownHeadingColor,
+                .paragraphStyle: paragraphStyle
+            ], range: range)
+            return
+        }
+        
+        // Aplicar estilo al contenido (sin los marcadores)
+        let contentRange = NSRange(location: range.location + markerLength, length: range.length - markerLength)
+        
+        if contentRange.location + contentRange.length <= self.length && contentRange.length > 0 {
+            addAttributes([
+                .font: NSFont.boldSystemFont(ofSize: fontSize),
+                .foregroundColor: NSColor.markdownHeadingColor,
+                .paragraphStyle: paragraphStyle
+            ], range: contentRange)
+            
+            // Ocultar los marcadores del inicio con tamaño de fuente normal para no afectar el cursor
+            let startMarkerRange = NSRange(location: range.location, length: markerLength)
+            addAttributes([
+                .foregroundColor: NSColor.clear,
+                .font: NSFont.systemFont(ofSize: 14), // Usar tamaño normal, no mínimo
+                .kern: -1000,
+                .baselineOffset: 0 // Sin offset para no afectar la línea del cursor
+            ], range: startMarkerRange)
+        } else {
+            // Fallback: aplicar estilo a todo el rango
+            addAttributes([
+                .font: NSFont.boldSystemFont(ofSize: fontSize),
+                .foregroundColor: NSColor.markdownHeadingColor,
+                .paragraphStyle: paragraphStyle
+            ], range: range)
+        }
     }
     
     private func applyBoldStyle(range: NSRange) {
@@ -93,15 +145,15 @@ extension NSMutableAttributedString {
         
         if startMarkerRange.location + startMarkerRange.length <= self.length {
             addAttributes([
-                .foregroundColor: NSColor.tertiaryLabelColor,
-                .font: NSFont.systemFont(ofSize: 8)
+                .foregroundColor: NSColor.clear,
+                .font: NSFont.systemFont(ofSize: 1)
             ], range: startMarkerRange)
         }
         
         if endMarkerRange.location + endMarkerRange.length <= self.length {
             addAttributes([
-                .foregroundColor: NSColor.tertiaryLabelColor,
-                .font: NSFont.systemFont(ofSize: 8)
+                .foregroundColor: NSColor.clear,
+                .font: NSFont.systemFont(ofSize: 1)
             ], range: endMarkerRange)
         }
     }
@@ -126,13 +178,15 @@ extension NSMutableAttributedString {
         
         if startMarkerRange.location + startMarkerRange.length <= self.length {
             addAttributes([
-                .foregroundColor: NSColor.tertiaryLabelColor
+                .foregroundColor: NSColor.clear,
+                .font: NSFont.systemFont(ofSize: 1)
             ], range: startMarkerRange)
         }
         
         if endMarkerRange.location + endMarkerRange.length <= self.length {
             addAttributes([
-                .foregroundColor: NSColor.tertiaryLabelColor
+                .foregroundColor: NSColor.clear,
+                .font: NSFont.systemFont(ofSize: 1)
             ], range: endMarkerRange)
         }
     }
