@@ -55,6 +55,8 @@ extension NSMutableAttributedString {
             applyQuoteStyle(range: element.range)
         case .strikethrough:
             applyStrikethroughStyle(range: element.range)
+        case .highlighted:
+            applyHighligtedStyle(range: element.range)
         }
     }
     
@@ -240,6 +242,13 @@ extension NSMutableAttributedString {
         addAttributes([
             .strikethroughStyle: NSUnderlineStyle.single.rawValue,
             .strikethroughColor: NSColor.labelColor
+        ], range: range)
+    }
+    
+    private func applyHighligtedStyle(range: NSRange) {
+        addAttributes([
+            .foregroundColor: NSColor.labelColor,
+            .backgroundColor: NSColor.markdownHighlightedColor
         ], range: range)
     }
 }

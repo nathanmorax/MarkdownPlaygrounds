@@ -25,6 +25,7 @@ class MarkdownParser {
             case list
             case quote
             case strikethrough
+            case highlighted
         }
     }
     
@@ -59,6 +60,9 @@ class MarkdownParser {
         
         // Quotes (> text)
         elements.append(contentsOf: parseQuotes(in: nsText))
+        
+        // Highlighted (==text =)=
+        elements.append(contentsOf: parseHighlighted(in: nsText))
         
         return elements.sorted { $0.range.location < $1.range.location }
     }
@@ -122,6 +126,9 @@ class MarkdownParser {
         return parsePattern("^>\\s+(.+)$", type: .quote, in: text, options: [.anchorsMatchLines])
     }
     
+    private func parseHighlighted(in text: NSString) -> [MarkdownElement] {
+        return parsePattern("==(.+?)==", type: .highlighted, in: text)
+    }
     private func parsePattern(_ pattern: String, type: MarkdownElement.ElementType, in text: NSString, options: NSRegularExpression.Options = []) -> [MarkdownElement] {
         var elements: [MarkdownElement] = []
         

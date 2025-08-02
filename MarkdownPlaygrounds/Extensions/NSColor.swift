@@ -11,4 +11,5 @@ extension NSColor {
     
     public static let markdownHeadingColor: NSColor = .colorHeading
     public static let markdonwListColor: NSColor = .colorList
+    public static let markdownHighlightedColor: NSColor = .colorHighlighted
 }
