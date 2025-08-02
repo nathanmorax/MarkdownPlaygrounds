@@ -35,15 +35,15 @@ class MarkdownParser {
         // Headers (# ## ###)
         elements.append(contentsOf: parseHeaders(in: nsText))
         
+        // 1. Bold + Italic (***texto***) - PRIMERO, más específico
+        elements.append(contentsOf: parseBoldItalic(in: nsText))
+        
         // Bold (**text**)
         elements.append(contentsOf: parseBold(in: nsText))
         
         // Italic (*text*)
         
         elements.append(contentsOf: parseItalic(in: nsText))
-        
-        // 1. Bold + Italic (***texto***) - PRIMERO, más específico
-        elements.append(contentsOf: parseBoldItalic(in: nsText))
         
         // Inline code (`code`)
         elements.append(contentsOf: parseInlineCode(in: nsText))
@@ -88,17 +88,17 @@ class MarkdownParser {
         return elements
     }
     
+    private func parseBoldItalic(in text: NSString) -> [MarkdownElement] {
+        // Buscar texto con ***texto*** (negrita Y cursiva)
+        return parsePattern("\\*\\*\\*([^*]+?)\\*\\*\\*", type: .boldItalic, in: text)
+    }
+    
     private func parseBold(in text: NSString) -> [MarkdownElement] {
         return parsePattern("\\*\\*([^*]+?)\\*\\*", type: .bold, in: text)
     }
     
     private func parseItalic(in text: NSString) -> [MarkdownElement] {
         return parsePattern("(?<!\\*)\\*([^*]+?)\\*(?!\\*)", type: .italic, in: text)
-    }
-    
-    private func parseBoldItalic(in text: NSString) -> [MarkdownElement] {
-        // Buscar texto con ***texto*** (negrita Y cursiva)
-        return parsePattern("\\*\\*\\*([^*]+?)\\*\\*\\*", type: .boldItalic, in: text)
     }
     
     private func parseInlineCode(in text: NSString) -> [MarkdownElement] {
