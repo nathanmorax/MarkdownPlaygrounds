@@ -65,7 +65,7 @@ extension NSMutableAttributedString {
         
         addAttributes([
             .font: NSFont.boldSystemFont(ofSize: fontSize),
-            .foregroundColor: NSColor.labelColor,
+            .foregroundColor: NSColor.markdownHeadingColor,
             .paragraphStyle: paragraphStyle
         ], range: range)
     }
@@ -219,7 +219,8 @@ extension NSMutableAttributedString {
         paragraphStyle.firstLineHeadIndent = 0
         
         addAttributes([
-            .paragraphStyle: paragraphStyle
+            .paragraphStyle: paragraphStyle,
+            .foregroundColor: NSColor.markdonwListColor
         ], range: range)
     }
     
