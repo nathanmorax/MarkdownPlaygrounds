@@ -274,6 +274,22 @@ extension NSMutableAttributedString {
         paragraphStyle.headIndent = 20
         paragraphStyle.firstLineHeadIndent = 0
         
+        let text = self.attributedSubstring(from: range).string
+        
+        let listMarkers = ["* ", "- ", "*", "-"]
+        
+        for marker in listMarkers {
+            if text.hasPrefix(marker) {
+                let bulletRange = NSRange(location: range.location, length: marker.count)
+                let replacement = marker.hasSuffix(" ") ? "• " : "•"
+                
+                guard bulletRange.location + bulletRange.length <= self.length else { continue }
+                
+                replaceCharacters(in: bulletRange, with: replacement)
+                break
+            }
+        }
+        
         addAttributes([
             .paragraphStyle: paragraphStyle,
             .foregroundColor: NSColor.markdonwListColor
