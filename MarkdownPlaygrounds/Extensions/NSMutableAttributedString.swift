@@ -56,7 +56,7 @@ extension NSMutableAttributedString {
         case .strikethrough:
             applyStrikethroughStyle(range: element.range)
         case .highlighted:
-            applyHighlightedAttachment()
+            applyHighlightedStyle(range: element.range)
         }
     }
     
@@ -146,14 +146,14 @@ extension NSMutableAttributedString {
         if startMarkerRange.location + startMarkerRange.length <= self.length {
             addAttributes([
                 .foregroundColor: NSColor.clear,
-                .font: NSFont.systemFont(ofSize: 1)
+                .font: NSFont.systemFont(ofSize: 4)
             ], range: startMarkerRange)
         }
         
         if endMarkerRange.location + endMarkerRange.length <= self.length {
             addAttributes([
                 .foregroundColor: NSColor.clear,
-                .font: NSFont.systemFont(ofSize: 1)
+                .font: NSFont.systemFont(ofSize: 4)
             ], range: endMarkerRange)
         }
     }
@@ -315,24 +315,19 @@ extension NSMutableAttributedString {
         ], range: range)
     }
     
-    func applyHighlightedAttachment() {
-        let pattern = "==(.+?)=="
-        let regex = try! NSRegularExpression(pattern: pattern)
-        let nsString = self.string as NSString
-        let matches = regex.matches(in: nsString as String, range: NSRange(location: 0, length: nsString.length))
+    private func applyHighlightedStyle(range: NSRange) {
+        guard range.length > 4 else { return }
 
-        for match in matches.reversed() {
-            let fullRange = match.range(at: 0)
-            let innerRange = match.range(at: 1)
-            let highlightedText = nsString.substring(with: innerRange)
+        let contentRange = NSRange(location: range.location + 2, length: range.length - 4)
+        let content = (self.string as NSString).substring(with: contentRange)
 
-            let attachment = RoundedBackgroundTextAttachment(text: highlightedText)
-            let attributed = NSAttributedString(attachment: attachment)
+        // Crear el attachment
+        let attachment = RoundedBackgroundTextAttachment(text: content)
+        let attributedAttachment = NSAttributedString(attachment: attachment)
 
-            self.replaceCharacters(in: fullRange, with: attributed)
-        }
+        // Reemplazar todo el rango ==texto== con el attachment
+        self.replaceCharacters(in: range, with: attributedAttachment)
     }
-
 }
 
 final class RoundedBackgroundTextAttachment: NSTextAttachment {

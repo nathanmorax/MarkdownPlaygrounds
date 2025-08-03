@@ -223,6 +223,7 @@ final class ViewController: NSViewController {
         updateCodeBlocks(from: elements)
     }
     
+    
     private func updateCodeBlocks(from elements: [MarkdownParser.MarkdownElement]) {
         codeBlocks = elements.compactMap { element in
             if case .codeBlock = element.type {
