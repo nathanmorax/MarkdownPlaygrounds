@@ -8,11 +8,6 @@
 import Cocoa
 
 
-// Estructura para representar bloques de código
-struct CodeBlock {
-    let text: String
-    let range: NSRange
-}
 
 class Boilerplate {
     
