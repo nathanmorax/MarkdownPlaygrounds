@@ -4,6 +4,12 @@
 //
 //  Created by Jonathan Mora on 31/07/25.
 //
+//
+//  NSMutableAttributedString.swift
+//  MarkdownPlaygrounds
+//
+//  Created by Jonathan Mora on 31/07/25.
+//
 import Cocoa
 
 // MARK: - Enhanced Styling
@@ -315,55 +321,37 @@ extension NSMutableAttributedString {
         ], range: range)
     }
     
+    // SOLUCIÓN 1: Usar atributos en lugar de NSTextAttachment
     private func applyHighlightedStyle(range: NSRange) {
         guard range.length > 4 else { return }
-
+        
+        // Ocultar los marcadores ==
+        let startMarkerRange = NSRange(location: range.location, length: 2)
+        let endMarkerRange = NSRange(location: range.location + range.length - 2, length: 2)
         let contentRange = NSRange(location: range.location + 2, length: range.length - 4)
-        let content = (self.string as NSString).substring(with: contentRange)
-
-        // Crear el attachment
-        let attachment = RoundedBackgroundTextAttachment(text: content)
-        let attributedAttachment = NSAttributedString(attachment: attachment)
-
-        // Reemplazar todo el rango ==texto== con el attachment
-        self.replaceCharacters(in: range, with: attributedAttachment)
-    }
-}
-
-final class RoundedBackgroundTextAttachment: NSTextAttachment {
-    let text: String
-    
-    init(text: String) {
-        self.text = text
-        super.init(data: nil, ofType: nil)
-        self.image = renderTextAsImage()
-    }
-    
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-    
-    private func renderTextAsImage() -> NSImage? {
-        let attributes: [NSAttributedString.Key: Any] = [
+        
+        // Verificar que los rangos sean válidos
+        guard contentRange.location + contentRange.length <= self.length,
+              startMarkerRange.location + startMarkerRange.length <= self.length,
+              endMarkerRange.location + endMarkerRange.length <= self.length else { return }
+        
+        // Aplicar estilo al contenido usando backgroundColor en lugar de attachment
+        addAttributes([
+            .backgroundColor: NSColor.colorHighlighted,
             .foregroundColor: NSColor.labelColor,
             .font: NSFont.systemFont(ofSize: 14, weight: .regular)
-        ]
+        ], range: contentRange)
         
-        let textSize = text.size(withAttributes: attributes)
-        let padding: CGFloat = 6
-        let size = NSSize(width: textSize.width + padding * 2, height: textSize.height + padding)
-
-        let image = NSImage(size: size)
-        image.lockFocus()
-
-        let rect = NSRect(origin: .zero, size: size)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 6, yRadius: 6)
-        NSColor.colorHighlighted.setFill()
-        path.fill()
-
-        (text as NSString).draw(at: NSPoint(x: padding, y: padding / 2), withAttributes: attributes)
-
-        image.unlockFocus()
-        return image
+        // Ocultar los marcadores == pero mantenerlos como texto
+        addAttributes([
+            .foregroundColor: NSColor.clear,
+            .font: NSFont.systemFont(ofSize: 1)
+        ], range: startMarkerRange)
+        
+        addAttributes([
+            .foregroundColor: NSColor.clear,
+            .font: NSFont.systemFont(ofSize: 1)
+        ], range: endMarkerRange)
     }
 }
+
