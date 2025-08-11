@@ -25,8 +25,8 @@ final class ViewController: NSViewController {
         editor.allowsUndo = true
         
         // Configurar colores y fuentes
-        editor.backgroundColor = NSColor.controlBackgroundColor
-        output.backgroundColor = NSColor.controlBackgroundColor
+        editor.backgroundColor =  .backgroundEditorColor
+        output.backgroundColor = .backgroundOutputColor
         
         // Mejorar la experiencia de escritura
         editor.isAutomaticQuoteSubstitutionEnabled = false

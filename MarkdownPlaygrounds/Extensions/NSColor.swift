@@ -13,4 +13,7 @@ extension NSColor {
     public static let markdonwListColor: NSColor = .colorList
     public static let markdownHighlightedColor: NSColor = .colorHighlighted
     
+    public static let backgroundEditorColor: NSColor = .colorEditor
+    public static let backgroundOutputColor: NSColor = .colorOutput
+    
 }
