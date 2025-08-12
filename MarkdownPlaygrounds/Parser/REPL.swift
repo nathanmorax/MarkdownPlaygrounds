@@ -14,6 +14,47 @@ final class REPL {
         self.onStdOut = onStdOut
         self.onStdErr = onStdErr
     }
+    
+    func wrapLastExpressionInPrint(_ code: String) -> String {
+        let lines = code.components(separatedBy: .newlines)
+        guard !lines.isEmpty else { return code }
+
+        // Buscar la última línea no vacía
+        var lastIndex = lines.count - 1
+        while lastIndex >= 0 && lines[lastIndex].trimmingCharacters(in: .whitespaces).isEmpty {
+            lastIndex -= 1
+        }
+
+        guard lastIndex >= 0 else { return code }
+
+        let lastLine = lines[lastIndex].trimmingCharacters(in: .whitespaces)
+
+        // Detectar si es una declaración de variable
+        let variablePrefixes = ["let", "var"]
+        for prefix in variablePrefixes {
+            if lastLine.hasPrefix(prefix) {
+                // Extraer nombre de variable
+                let components = lastLine.components(separatedBy: .whitespaces)
+                if components.count >= 2 {
+                    let variableName = components[1].components(separatedBy: "=")[0].trimmingCharacters(in: .whitespaces)
+                    return code + "\nprint(\(variableName))"
+                }
+            }
+        }
+
+        // Si no es declaración, aplicar heurística de expresión
+        let keywords = ["func", "class", "struct", "enum", "import", "return", "if", "while", "for", "switch", "guard", "do", "try", "throw"]
+        let isExpression = !keywords.contains { lastLine.hasPrefix($0) }
+
+        if isExpression {
+            var modifiedLines = lines
+            modifiedLines[lastIndex] = "print(\(lastLine))"
+            return modifiedLines.joined(separator: "\n")
+        } else {
+            return code
+        }
+    }
+
 
     func execute(_ code: String) {
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
@@ -31,7 +72,9 @@ final class REPL {
             do {
                 try process.run()
 
-                if let data = code.data(using: .utf8) {
+                guard let transformedCode = self?.wrapLastExpressionInPrint(code) else { return }
+                
+                if let data = transformedCode.data(using: .utf8) {
                     stdIn.fileHandleForWriting.write(data)
                 }
                 stdIn.fileHandleForWriting.closeFile()
@@ -55,4 +98,5 @@ final class REPL {
             }
         }
     }
+
 }

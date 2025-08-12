@@ -47,6 +47,7 @@ final class ViewController: NSViewController {
         parse()
     }
     
+    
     private func setupREPL() {
         repl = REPL(onStdOut: { [weak self] text in
             DispatchQueue.main.async {

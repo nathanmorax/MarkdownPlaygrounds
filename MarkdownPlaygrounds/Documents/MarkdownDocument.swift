@@ -34,7 +34,7 @@ class MarkdownDocument: NSDocument {
     
     override func makeWindowControllers() {
         let window = NSWindow(contentViewController: contentViewController)
-        window.setContentSize(NSSize(width: 1000, height: 700))
+        window.setContentSize(NSSize(width: 1000, height: 1200))
         let wc = NSWindowController(window: window)
         wc.contentViewController = contentViewController
         addWindowController(wc)
