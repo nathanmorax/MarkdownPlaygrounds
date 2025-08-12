@@ -92,7 +92,8 @@ final class ViewController: NSViewController {
 
     }
     
-    @objc func newFile() {
+    @objc func newFile(_ sender: Any?) {
+        NSDocumentController.shared.newDocument(sender)
     }
 
     // MARK: - Parsing y Rendering Principal
