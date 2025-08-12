@@ -51,25 +51,9 @@ final class ViewController: NSViewController {
     
     override func viewDidAppear() {
         super.viewDidAppear()
-        
-        let icon = NSImage(systemSymbolName: "sidebar.right", accessibilityDescription: "Toggle Inspector")
-        let toggleButton = NSButton(image: icon!, target: self, action: #selector(toggleInspector))
-        toggleButton.bezelStyle = .texturedRounded
-
-        
-        let accessory = NSTitlebarAccessoryViewController()
-        accessory.view = toggleButton
-        accessory.layoutAttribute = .right
-        
-        view.window?.addTitlebarAccessoryViewController(accessory)
-    }
-
-    @objc func toggleInspector() {
-        // Aquí puedes ocultar o mostrar alguna vista, por ejemplo:
-        outputScrollView.isHidden.toggle()
+        setupBarAccessory()
 
     }
-
     
     private func setupREPL() {
         repl = REPL(onStdOut: { [weak self] text in
@@ -97,11 +81,18 @@ final class ViewController: NSViewController {
             object: editor,
             queue: nil
         ) { [weak self] _ in
-            // Pequeño delay para evitar demasiadas actualizaciones
             DispatchQueue.main.async {
                 self?.parse()
             }
         }
+    }
+    
+    @objc func toggleInspector() {
+        outputScrollView.isHidden.toggle()
+
+    }
+    
+    @objc func newFile() {
     }
 
     // MARK: - Parsing y Rendering Principal
