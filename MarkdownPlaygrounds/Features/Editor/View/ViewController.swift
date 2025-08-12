@@ -13,6 +13,8 @@ final class ViewController: NSViewController {
     var observerToken: Any?
     var codeBlocks: [CodeBlock] = []
     var repl: REPL!
+    var outputScrollView: NSScrollView!
+
     
     // Sistema de parsing incremental para mejor performance
     private let incrementalParser = IncrementalMarkdownParser()
@@ -20,25 +22,25 @@ final class ViewController: NSViewController {
     
     override func loadView() {
         let editorSV = editor.configureAndWrapInScrollView(isEditable: true, inset: CGSize(width: 20, height: 15))
-        let outputSV = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 15, height: 15))
-        outputSV.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
-        editor.allowsUndo = true
         
-        // Configurar colores y fuentes
-        editor.backgroundColor =  .backgroundEditorColor
+        outputScrollView = output.configureAndWrapInScrollView(isEditable: false, inset: CGSize(width: 15, height: 15))
+        outputScrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: 300).isActive = true
+        
+        editor.allowsUndo = true
+        editor.backgroundColor = .backgroundEditorColor
         output.backgroundColor = .backgroundOutputColor
         
-        // Mejorar la experiencia de escritura
         editor.isAutomaticQuoteSubstitutionEnabled = false
         editor.isAutomaticDashSubstitutionEnabled = false
         editor.isAutomaticTextReplacementEnabled = false
         
-        self.view = Boilerplate().splitView([editorSV, outputSV])
+        self.view = Boilerplate().splitView([editorSV, outputScrollView])
     }
+
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         setupREPL()
         setupTextChangeObserver()
         
@@ -47,6 +49,26 @@ final class ViewController: NSViewController {
         parse()
     }
     
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        
+        let toggleButton = NSButton(title: "Inspector", target: self, action: #selector(toggleInspector))
+        toggleButton.setButtonType(.momentaryPushIn)
+        toggleButton.bezelStyle = .texturedRounded
+        
+        let accessory = NSTitlebarAccessoryViewController()
+        accessory.view = toggleButton
+        accessory.layoutAttribute = .right
+        
+        view.window?.addTitlebarAccessoryViewController(accessory)
+    }
+
+    @objc func toggleInspector() {
+        // Aquí puedes ocultar o mostrar alguna vista, por ejemplo:
+        outputScrollView.isHidden.toggle()
+
+    }
+
     
     private func setupREPL() {
         repl = REPL(onStdOut: { [weak self] text in
