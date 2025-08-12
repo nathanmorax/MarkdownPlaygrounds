@@ -52,9 +52,10 @@ final class ViewController: NSViewController {
     override func viewDidAppear() {
         super.viewDidAppear()
         
-        let toggleButton = NSButton(title: "Inspector", target: self, action: #selector(toggleInspector))
-        toggleButton.setButtonType(.momentaryPushIn)
+        let icon = NSImage(systemSymbolName: "sidebar.right", accessibilityDescription: "Toggle Inspector")
+        let toggleButton = NSButton(image: icon!, target: self, action: #selector(toggleInspector))
         toggleButton.bezelStyle = .texturedRounded
+
         
         let accessory = NSTitlebarAccessoryViewController()
         accessory.view = toggleButton
